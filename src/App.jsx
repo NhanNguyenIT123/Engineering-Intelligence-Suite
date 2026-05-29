@@ -203,6 +203,8 @@ function IntroScene() {
 
 function SuiteCommandCenter({ suiteIssue, setSuiteIssue, suiteInputType, setSuiteInputType, suiteResult, setSuiteResult }) {
   const [status, setStatus] = useState("idle");
+  const [selfTestStatus, setSelfTestStatus] = useState("idle");
+  const [selfTestResult, setSelfTestResult] = useState(null);
   const [error, setError] = useState("");
 
   async function runSuite() {
@@ -219,6 +221,19 @@ function SuiteCommandCenter({ suiteIssue, setSuiteIssue, suiteInputType, setSuit
     } catch (exc) {
       setStatus("error");
       setError("Suite endpoint is unavailable. Start scripts\\run_api.ps1 and try again.");
+    }
+  }
+
+  async function runConsoleSelfTest() {
+    setSelfTestStatus("running");
+    setError("");
+    try {
+      const data = await postJson("/diagnostics/console/self-test", {});
+      setSelfTestResult(data);
+      setSelfTestStatus("done");
+    } catch (exc) {
+      setSelfTestStatus("error");
+      setError("Console self-test endpoint is unavailable. Start scripts\\run_api.ps1 and try again.");
     }
   }
 
@@ -261,6 +276,10 @@ function SuiteCommandCenter({ suiteIssue, setSuiteIssue, suiteInputType, setSuit
           <button className="classify-button" onClick={runSuite} disabled={status === "running"}>
             {status === "running" ? <Cpu className="spin" size={18} /> : <Network size={18} />}
             {status === "running" ? "Running Suite" : "Run Suite Workflow"}
+          </button>
+          <button className="secondary-action" onClick={runConsoleSelfTest} disabled={selfTestStatus === "running"}>
+            {selfTestStatus === "running" ? <Cpu className="spin" size={18} /> : <Radar size={18} />}
+            {selfTestStatus === "running" ? "Testing Diagnostics" : "Run Simulated Console Self-Test"}
           </button>
           {error && <div className="api-error">{error}</div>}
         </div>
@@ -351,6 +370,25 @@ function SuiteCommandCenter({ suiteIssue, setSuiteIssue, suiteInputType, setSuit
             </div>
           </div>
           <p>{suiteResult.recommended_next_action}</p>
+        </div>
+      )}
+      {selfTestResult && (
+        <div className="self-test-panel">
+          <span className="output-kicker">CONSOLE DIAGNOSTICS SELF-TEST</span>
+          <strong>{Math.round(selfTestResult.detection_accuracy * 100)}% detection accuracy</strong>
+          <p>
+            {selfTestResult.passed}/{selfTestResult.scenario_count} simulated console failures passed in{" "}
+            {selfTestResult.latency_ms} ms.
+          </p>
+          <div className="self-test-grid">
+            {selfTestResult.results.map((item) => (
+              <div className={item.passed ? "passed" : "failed"} key={item.id}>
+                <span>{item.id}</span>
+                <b>{item.detected_signal}</b>
+                <p>Expected: {item.expected_signal}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </section>

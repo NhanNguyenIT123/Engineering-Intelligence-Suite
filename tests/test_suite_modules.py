@@ -1,7 +1,7 @@
 import unittest
 
 from issuesense.engiagent import build_investigation_draft
-from issuesense.console_diagnostics import analyze_console_log
+from issuesense.console_diagnostics import analyze_console_log, run_console_self_test
 from issuesense.qaforge import generate_test_plan
 from issuesense.suite import run_suite_workflow
 
@@ -55,6 +55,13 @@ class SuiteModuleTests(unittest.TestCase):
         self.assertEqual(diagnostics["primary_signal"]["id"], "cors_blocked_request")
         self.assertEqual(result["console_diagnostics"]["primary_signal"]["id"], "cors_blocked_request")
         self.assertGreaterEqual(len(result["workflow_trace"]), 4)
+
+    def test_console_self_test_scenarios_pass(self):
+        result = run_console_self_test()
+
+        self.assertEqual(result["scenario_count"], 6)
+        self.assertEqual(result["detection_accuracy"], 1.0)
+        self.assertTrue(all(item["passed"] for item in result["results"]))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 
 
 CONSOLE_PATTERNS = [
@@ -63,6 +64,66 @@ CONSOLE_PATTERNS = [
 ]
 
 
+SIMULATED_CONSOLE_SCENARIOS = [
+    {
+        "id": "SIM-CORS-001",
+        "expected_signal": "cors_blocked_request",
+        "console_text": (
+            "Access to fetch at 'http://127.0.0.1:8765/suite/run' from origin "
+            "'http://127.0.0.1:5176' has been blocked by CORS policy: "
+            "No 'Access-Control-Allow-Origin' header is present on the requested resource.\n"
+            "Uncaught (in promise) TypeError: Failed to fetch\n"
+            "    at runSuite (App.jsx:210:22)"
+        ),
+    },
+    {
+        "id": "SIM-500-001",
+        "expected_signal": "http_server_error",
+        "console_text": (
+            "POST http://127.0.0.1:8765/predict 500 Internal Server Error\n"
+            "Uncaught (in promise) Error: request failed with status 500\n"
+            "    at classifyIssue (TriageConsole.jsx:88:19)"
+        ),
+    },
+    {
+        "id": "SIM-404-001",
+        "expected_signal": "http_not_found",
+        "console_text": (
+            "GET http://127.0.0.1:8765/api/projects/active 404 Not Found\n"
+            "Failed to load resource: the server responded with a status 404\n"
+            "    at fetchProject (ProjectSelector.tsx:42:11)"
+        ),
+    },
+    {
+        "id": "SIM-TYPE-001",
+        "expected_signal": "javascript_type_error",
+        "console_text": (
+            "Uncaught TypeError: Cannot read properties of undefined (reading 'map')\n"
+            "    at ResultsPanel (ResultsPanel.jsx:51:28)\n"
+            "    at renderWithHooks (react-dom_client.js:5521:18)"
+        ),
+    },
+    {
+        "id": "SIM-IMPORT-001",
+        "expected_signal": "module_import_failure",
+        "console_text": (
+            "[vite] Failed to resolve import './components/MissingPanel.jsx' from 'src/App.jsx'. "
+            "Does the file exist?\n"
+            "    at TransformPluginContext.error (vite.js:32910:14)"
+        ),
+    },
+    {
+        "id": "SIM-REACT-001",
+        "expected_signal": "react_render_error",
+        "console_text": (
+            "Warning: React has detected a change in the order of Hooks called by Dashboard.\n"
+            "Error: Rendered fewer hooks than expected.\n"
+            "    at Dashboard (Dashboard.jsx:77:5)"
+        ),
+    },
+]
+
+
 def analyze_console_log(console_text: str) -> dict:
     normalized = f" {console_text.lower()} "
     matches = []
@@ -94,6 +155,37 @@ def analyze_console_log(console_text: str) -> dict:
         "failing_urls": failing_urls,
         "issue_text": issue_text,
         "next_steps": _next_steps(primary, stack_frames, failing_urls),
+    }
+
+
+def run_console_self_test() -> dict:
+    started = time.perf_counter()
+    results = []
+    for scenario in SIMULATED_CONSOLE_SCENARIOS:
+        scenario_start = time.perf_counter()
+        diagnostics = analyze_console_log(scenario["console_text"])
+        detected = diagnostics["primary_signal"]["id"]
+        passed = detected == scenario["expected_signal"]
+        results.append(
+            {
+                "id": scenario["id"],
+                "expected_signal": scenario["expected_signal"],
+                "detected_signal": detected,
+                "passed": passed,
+                "severity": diagnostics["primary_signal"]["severity"],
+                "likely_cause": diagnostics["primary_signal"]["likely_cause"],
+                "latency_ms": round((time.perf_counter() - scenario_start) * 1000, 3),
+            }
+        )
+    passed_count = sum(1 for result in results if result["passed"])
+    return {
+        "suite": "Console Diagnostics Self-Test",
+        "scenario_count": len(results),
+        "passed": passed_count,
+        "failed": len(results) - passed_count,
+        "detection_accuracy": round(passed_count / max(len(results), 1), 3),
+        "latency_ms": round((time.perf_counter() - started) * 1000, 3),
+        "results": results,
     }
 
 

@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from issuesense.console_diagnostics import analyze_console_log
+from issuesense.console_diagnostics import analyze_console_log, run_console_self_test
 from issuesense.engiagent import build_investigation_draft
 from issuesense.explain import build_explanation
 from issuesense.experiment_tracking import load_runs
@@ -161,6 +161,11 @@ def suite_run(request: SuiteRunRequest):
 @app.post("/diagnostics/console")
 def console_diagnostics(request: ConsoleDiagnosticsRequest):
     return analyze_console_log(request.console_text)
+
+
+@app.post("/diagnostics/console/self-test")
+def console_diagnostics_self_test():
+    return run_console_self_test()
 
 
 def triage_status(confidence: float, token_count: int, evidence_matches: int) -> str:
