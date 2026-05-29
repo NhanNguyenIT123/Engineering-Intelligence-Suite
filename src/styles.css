@@ -259,6 +259,33 @@ button {
   font: 600 14px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
+.input-mode-toggle {
+  display: inline-flex;
+  gap: 8px;
+  justify-self: start;
+  padding: 6px;
+  border: 1px solid rgba(141, 239, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(2, 8, 18, 0.54);
+}
+
+.input-mode-toggle button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 999px;
+  color: #c9d8e4;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.input-mode-toggle button.active {
+  color: #04101c;
+  background: linear-gradient(135deg, #8defff, #ffbd75);
+}
+
 .command-board {
   position: relative;
   z-index: 5;
@@ -315,7 +342,8 @@ button {
 }
 
 .workflow-trace-grid div,
-.package-summary-grid div {
+.package-summary-grid div,
+.console-signal-panel {
   padding: 14px;
   border: 1px solid rgba(141, 239, 255, 0.16);
   border-radius: 16px;
@@ -323,7 +351,8 @@ button {
 }
 
 .workflow-trace-grid span,
-.package-summary-grid span {
+.package-summary-grid span,
+.console-signal-panel span {
   display: block;
   color: #8defff;
   font-size: 11px;
@@ -332,7 +361,8 @@ button {
 }
 
 .workflow-trace-grid b,
-.package-summary-grid b {
+.package-summary-grid b,
+.console-signal-panel b {
   display: block;
   margin-top: 6px;
   color: #ffbd75;
@@ -343,6 +373,27 @@ button {
   margin-top: 8px;
   color: #c9d8e4;
   font-size: 12px;
+}
+
+.console-signal-panel {
+  display: grid;
+  gap: 8px;
+  border-color: rgba(255, 157, 46, 0.24);
+  background: rgba(255, 157, 46, 0.08);
+}
+
+.console-signal-panel p,
+.console-signal-panel li {
+  color: #c9d8e4;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.console-signal-panel ol {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding-left: 18px;
 }
 
 .command-core {

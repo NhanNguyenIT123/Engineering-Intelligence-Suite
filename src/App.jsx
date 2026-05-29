@@ -40,6 +40,8 @@ const metrics = [
 const apiUrl = "http://127.0.0.1:8765";
 const defaultIssue =
   "During regression testing, the login API returns HTTP 500 only when the password contains special characters. The expected behavior is HTTP 401 for invalid credentials.";
+const defaultConsoleLog =
+  "Access to fetch at 'http://127.0.0.1:8765/suite/run' from origin 'http://127.0.0.1:5176' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.\nUncaught (in promise) TypeError: Failed to fetch\n    at runSuite (App.jsx:210:22)";
 const defaultRequirement =
   "The CRM connector must map customerId to customer_id, reject malformed payloads, and keep workflow status synchronized across ERP and CRM services.";
 
@@ -199,7 +201,7 @@ function IntroScene() {
   );
 }
 
-function SuiteCommandCenter({ suiteIssue, setSuiteIssue, suiteResult, setSuiteResult }) {
+function SuiteCommandCenter({ suiteIssue, setSuiteIssue, suiteInputType, setSuiteInputType, suiteResult, setSuiteResult }) {
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
 
@@ -210,6 +212,7 @@ function SuiteCommandCenter({ suiteIssue, setSuiteIssue, suiteResult, setSuiteRe
       const data = await postJson("/suite/run", {
         issue_text: suiteIssue,
         model: "textcnn",
+        input_type: suiteInputType,
       });
       setSuiteResult(data);
       setStatus("done");
@@ -233,6 +236,26 @@ function SuiteCommandCenter({ suiteIssue, setSuiteIssue, suiteResult, setSuiteRe
           <div className="console-header">
             <span>SUITE ENDPOINT</span>
             <strong>{apiUrl}/suite/run</strong>
+          </div>
+          <div className="input-mode-toggle">
+            <button
+              className={suiteInputType === "issue" ? "active" : ""}
+              onClick={() => {
+                setSuiteInputType("issue");
+                setSuiteIssue(samples[0]);
+              }}
+            >
+              Issue Report
+            </button>
+            <button
+              className={suiteInputType === "console_log" ? "active" : ""}
+              onClick={() => {
+                setSuiteInputType("console_log");
+                setSuiteIssue(defaultConsoleLog);
+              }}
+            >
+              Console Log
+            </button>
           </div>
           <textarea value={suiteIssue} onChange={(event) => setSuiteIssue(event.target.value)} />
           <button className="classify-button" onClick={runSuite} disabled={status === "running"}>
@@ -301,6 +324,18 @@ function SuiteCommandCenter({ suiteIssue, setSuiteIssue, suiteResult, setSuiteRe
               </div>
             ))}
           </div>
+          {suiteResult.console_diagnostics && (
+            <div className="console-signal-panel">
+              <span>CONSOLE SIGNAL</span>
+              <b>{suiteResult.console_diagnostics.primary_signal.id}</b>
+              <p>{suiteResult.console_diagnostics.primary_signal.likely_cause}</p>
+              <ol>
+                {suiteResult.console_diagnostics.next_steps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          )}
           <div className="package-summary-grid">
             <div>
               <span>Likely cause</span>
@@ -957,6 +992,7 @@ export function App() {
   const [qaInput, setQaInput] = useState(defaultRequirement);
   const [qaResult, setQaResult] = useState(null);
   const [suiteIssue, setSuiteIssue] = useState(samples[0]);
+  const [suiteInputType, setSuiteInputType] = useState("issue");
   const [suiteResult, setSuiteResult] = useState(null);
   const [activeView, setActiveView] = useState("overview");
 
@@ -1056,6 +1092,8 @@ export function App() {
           <SuiteCommandCenter
             suiteIssue={suiteIssue}
             setSuiteIssue={setSuiteIssue}
+            suiteInputType={suiteInputType}
+            setSuiteInputType={setSuiteInputType}
             suiteResult={suiteResult}
             setSuiteResult={setSuiteResult}
           />

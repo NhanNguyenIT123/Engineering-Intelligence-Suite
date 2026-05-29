@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from issuesense.console_diagnostics import analyze_console_log
 from issuesense.engiagent import build_investigation_draft
 from issuesense.explain import build_explanation
 from issuesense.preprocessing import tokenize
@@ -8,11 +9,18 @@ from issuesense.qaforge import generate_test_plan
 from issuesense.triage import build_triage_details
 
 
-def run_suite_workflow(issue_text: str, requirement: str | None = None, model: str = "textcnn") -> dict:
-    prediction = _predict_with_triage(issue_text, model)
+def run_suite_workflow(
+    issue_text: str,
+    requirement: str | None = None,
+    model: str = "textcnn",
+    input_type: str = "issue",
+) -> dict:
+    diagnostics = analyze_console_log(issue_text) if input_type == "console_log" else None
+    normalized_issue = diagnostics["issue_text"] if diagnostics else issue_text
+    prediction = _predict_with_triage(normalized_issue, model)
     triage_payload = {**prediction["triage"], "predicted_label": prediction["label"]}
-    investigation = build_investigation_draft(issue_text, triage_payload)
-    qa_requirement = requirement or _derive_requirement(issue_text, prediction)
+    investigation = build_investigation_draft(normalized_issue, triage_payload)
+    qa_requirement = requirement or _derive_requirement(normalized_issue, prediction)
     qa_plan = generate_test_plan(qa_requirement, triage_payload)
     readiness = _readiness_score(prediction, investigation, qa_plan)
 
@@ -22,10 +30,24 @@ def run_suite_workflow(issue_text: str, requirement: str | None = None, model: s
         "system_function": "Convert an engineering issue or test-report finding into a triage, investigation, and QA validation package.",
         "input": {
             "issue_text": issue_text,
+            "normalized_issue_text": normalized_issue,
+            "input_type": input_type,
             "requirement": qa_requirement,
             "model": model,
         },
+        "console_diagnostics": diagnostics,
         "workflow_trace": [
+            *(
+                [
+                    {
+                        "module": "Console Diagnostics",
+                        "action": "parsed console log into structured engineering issue context",
+                        "output": diagnostics["primary_signal"]["id"],
+                    }
+                ]
+                if diagnostics
+                else []
+            ),
             {
                 "module": "IssueSense ML",
                 "action": "classified issue, estimated likely cause, retrieved similar evidence",

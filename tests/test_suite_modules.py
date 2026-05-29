@@ -1,6 +1,7 @@
 import unittest
 
 from issuesense.engiagent import build_investigation_draft
+from issuesense.console_diagnostics import analyze_console_log
 from issuesense.qaforge import generate_test_plan
 from issuesense.suite import run_suite_workflow
 
@@ -41,6 +42,19 @@ class SuiteModuleTests(unittest.TestCase):
         self.assertIn("investigation", result["resolution_package"])
         self.assertIn("qa_plan", result["resolution_package"])
         self.assertGreaterEqual(len(result["workflow_trace"]), 3)
+
+    def test_console_diagnostics_detects_cors_and_runs_suite(self):
+        console = (
+            "Access to fetch at 'http://127.0.0.1:8765/suite/run' from origin "
+            "'http://127.0.0.1:5176' has been blocked by CORS policy. "
+            "Uncaught (in promise) TypeError: Failed to fetch at runSuite (App.jsx:210:22)"
+        )
+        diagnostics = analyze_console_log(console)
+        result = run_suite_workflow(console, input_type="console_log")
+
+        self.assertEqual(diagnostics["primary_signal"]["id"], "cors_blocked_request")
+        self.assertEqual(result["console_diagnostics"]["primary_signal"]["id"], "cors_blocked_request")
+        self.assertGreaterEqual(len(result["workflow_trace"]), 4)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from issuesense.console_diagnostics import analyze_console_log
 from issuesense.engiagent import build_investigation_draft
 from issuesense.explain import build_explanation
 from issuesense.experiment_tracking import load_runs
@@ -33,6 +34,11 @@ class SuiteRunRequest(BaseModel):
     issue_text: str = Field(min_length=8, max_length=6000)
     requirement: str | None = Field(default=None, max_length=6000)
     model: str = "textcnn"
+    input_type: str = "issue"
+
+
+class ConsoleDiagnosticsRequest(BaseModel):
+    console_text: str = Field(min_length=8, max_length=6000)
 
 
 app = FastAPI(title="IssueSense ML API", version="0.1.0")
@@ -61,6 +67,12 @@ def suite_modules():
     return {
         "suite": "Engineering Intelligence Suite",
         "modules": [
+            {
+                "name": "Console Diagnostics",
+                "role": "Runtime console log analyzer",
+                "endpoint": "POST /diagnostics/console",
+                "status": "mvp",
+            },
             {
                 "name": "IssueSense ML",
                 "role": "AI triage engine",
@@ -141,9 +153,14 @@ def qaforge_generate_tests(request: QAForgeRequest):
 @app.post("/suite/run")
 def suite_run(request: SuiteRunRequest):
     try:
-        return run_suite_workflow(request.issue_text, request.requirement, request.model)
+        return run_suite_workflow(request.issue_text, request.requirement, request.model, request.input_type)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/diagnostics/console")
+def console_diagnostics(request: ConsoleDiagnosticsRequest):
+    return analyze_console_log(request.console_text)
 
 
 def triage_status(confidence: float, token_count: int, evidence_matches: int) -> str:
