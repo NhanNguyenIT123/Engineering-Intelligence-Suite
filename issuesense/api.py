@@ -3,8 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from issuesense.explain import build_explanation
+from issuesense.experiment_tracking import load_runs
+from issuesense.paths import METRICS_PATH
 from issuesense.preprocessing import tokenize
 from issuesense.predict import predict_baseline, predict_textcnn
+import json
 
 
 class PredictRequest(BaseModel):
@@ -31,6 +34,16 @@ app.add_middleware(
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/metrics")
+def metrics():
+    if not METRICS_PATH.exists():
+        raise HTTPException(status_code=404, detail="Metrics not found. Run: python -m issuesense.evaluate")
+    return {
+        "metrics": json.loads(METRICS_PATH.read_text(encoding="utf-8")),
+        "runs": load_runs(),
+    }
 
 
 @app.post("/predict")

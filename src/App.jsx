@@ -316,7 +316,26 @@ function ModelEngine({ icon, name, score, caption }) {
   );
 }
 
-function EvaluationScene() {
+function findSplit(metricsData, name) {
+  return metricsData?.metrics?.evaluation_splits?.find((split) => split.name === name);
+}
+
+function modelMetric(metricsData, splitName, modelName, key) {
+  const split = findSplit(metricsData, splitName);
+  const model = split?.models?.find((item) => item.model === modelName);
+  return model?.[key];
+}
+
+function EvaluationScene({ metricsData }) {
+  const challengeF1 = modelMetric(metricsData, "manual_challenge", "pytorch_textcnn", "macro_f1") ?? 0.863;
+  const baselineF1 = modelMetric(metricsData, "manual_challenge", "tfidf_logistic_regression", "macro_f1") ?? 0.972;
+  const dynamicMetrics = [
+    { label: "Baseline Challenge F1", value: baselineF1.toFixed(3) },
+    { label: "TextCNN Challenge F1", value: challengeF1.toFixed(3) },
+    { label: "Manual Challenge", value: String(metricsData?.metrics?.challenge_dataset?.total_records ?? 36) },
+    { label: "Training Reports", value: String(metricsData?.metrics?.dataset?.total_records ?? 540) },
+  ];
+
   return (
     <Scene
       id="evaluation"
@@ -327,12 +346,79 @@ function EvaluationScene() {
     >
       <Asset src="/assets/confusion-matrix-engine.svg" className="matrix-engine" alt="Confusion matrix engine" />
       <div className="metric-constellation">
-        {metrics.map((metric, index) => (
+        {dynamicMetrics.map((metric, index) => (
           <div className="floating-metric" key={metric.label} style={{ animationDelay: `${index * 0.35}s` }}>
             <span>{metric.label}</span>
             <strong>{metric.value}</strong>
           </div>
         ))}
+      </div>
+    </Scene>
+  );
+}
+
+function DatasetAnalysisScene({ metricsData }) {
+  const distribution = metricsData?.metrics?.dataset?.label_distribution ?? {
+    software_bug: 90,
+    requirement_gap: 90,
+    test_environment_issue: 90,
+    data_issue: 90,
+    performance_issue: 90,
+    integration_issue: 90,
+  };
+  const challengeSplit = findSplit(metricsData, "manual_challenge");
+  const textcnn = challengeSplit?.models?.find((model) => model.model === "pytorch_textcnn");
+  const matrix = textcnn?.confusion_matrix ?? [
+    [6, 0, 0, 0, 0, 0],
+    [0, 4, 1, 0, 1, 0],
+    [0, 0, 5, 0, 0, 1],
+    [0, 0, 1, 5, 0, 0],
+    [0, 0, 0, 0, 6, 0],
+    [0, 0, 1, 0, 0, 5],
+  ];
+  const maxValue = Math.max(...Object.values(distribution));
+
+  return (
+    <Scene
+      id="analysis"
+      eyebrow="Scene 05B / Dataset Observatory"
+      title="The numbers are visible, not hidden."
+      body="IssueSense separates synthetic training data from manual challenge evaluation, then exposes class balance, confusion patterns, and experiment runs."
+      className="analysis-scene"
+    >
+      <div className="analysis-lab">
+        <div className="class-bars">
+          {Object.entries(distribution).map(([label, value]) => (
+            <div className="class-bar" key={label}>
+              <span>{displayLabel(label)}</span>
+              <div>
+                <i style={{ width: `${(value / maxValue) * 100}%` }} />
+              </div>
+              <b>{value}</b>
+            </div>
+          ))}
+        </div>
+        <div className="matrix-grid">
+          {matrix.flatMap((row, rowIndex) =>
+            row.map((value, columnIndex) => (
+              <span
+                key={`${rowIndex}-${columnIndex}`}
+                className={rowIndex === columnIndex ? "correct-cell" : value > 0 ? "error-cell" : ""}
+                style={{ opacity: value ? 0.45 + value / 10 : 0.18 }}
+              >
+                {value}
+              </span>
+            ))
+          )}
+        </div>
+        <div className="experiment-strip">
+          {(metricsData?.runs ?? []).slice(-3).map((run) => (
+            <div key={run.run_id}>
+              <span>{run.run_id}</span>
+              <b>{run.dataset_version.synthetic_records} synthetic / {run.dataset_version.challenge_records} challenge</b>
+            </div>
+          ))}
+        </div>
       </div>
     </Scene>
   );
@@ -403,7 +489,7 @@ function FinalScene() {
 function NavRail() {
   return (
     <nav className="nav-rail" aria-label="Scene navigation">
-      {["top", "triage", "data", "core", "training", "evaluation", "explain"].map((item) => (
+      {["top", "triage", "data", "core", "training", "evaluation", "analysis", "explain"].map((item) => (
         <a href={`#${item}`} key={item}>
           <Sparkles size={14} />
         </a>
@@ -414,8 +500,18 @@ function NavRail() {
 
 export function App() {
   const [result, setResult] = useState(null);
+  const [metricsData, setMetricsData] = useState(null);
 
   useEffect(() => {
+    fetch(`${apiUrl}/metrics`)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (data) {
+          setMetricsData(data);
+        }
+      })
+      .catch(() => setMetricsData(null));
+
     const animated = gsap.utils.toArray(".scene, .final-scene");
     animated.forEach((section) => {
       gsap.fromTo(
@@ -474,7 +570,8 @@ export function App() {
       <DataScene />
       <CoreScene result={result} />
       <TrainingScene />
-      <EvaluationScene />
+      <EvaluationScene metricsData={metricsData} />
+      <DatasetAnalysisScene metricsData={metricsData} />
       <ExplainScene result={result} />
       <FinalScene />
       <div className="ambient-glow ambient-a" />

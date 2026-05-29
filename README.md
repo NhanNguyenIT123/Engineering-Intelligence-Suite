@@ -114,6 +114,35 @@ Important: the cinematic React site is the storytelling/demo layer. The real pre
 
 The live classifier includes an uncertainty gate. Very short or ambiguous inputs such as `500 Server error` are marked as `needs_review` instead of being presented as reliable classifications. A prediction is auto-classified only when confidence, input length, and similar-example evidence are strong enough.
 
+## Experiment Tracking
+
+Every evaluation run appends a compact JSONL record to `outputs/experiments/runs.jsonl` with:
+
+- run id and timestamp
+- synthetic/challenge dataset hashes
+- dataset sizes
+- accuracy, macro-F1, and latency for each model/split
+
+The latest run is also embedded in `outputs/metrics.json` and served through:
+
+```text
+GET http://127.0.0.1:8765/metrics
+```
+
+## Optional LLM Explanation
+
+By default, explanations are extractive and grounded in similar labeled examples.
+
+To try local Ollama explanation:
+
+```powershell
+$env:ISSUESENSE_EXPLANATION_PROVIDER="ollama"
+$env:OLLAMA_MODEL="qwen2.5:1.5b-instruct"
+.\scripts\run_api.ps1
+```
+
+The LLM output is accepted only if it passes a simple grounding check. Otherwise, the system falls back to the extractive explanation.
+
 ## Current Results
 
 Latest committed summary:

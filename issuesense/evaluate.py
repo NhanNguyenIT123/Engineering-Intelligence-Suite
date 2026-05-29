@@ -7,6 +7,7 @@ import torch
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 
 from issuesense.data import IssueRecord, load_challenge_records, load_records, split_records, texts_and_labels
+from issuesense.experiment_tracking import append_run
 from issuesense.labels import LABELS
 from issuesense.paths import BASELINE_MODEL_PATH, ERROR_ANALYSIS_PATH, METRICS_PATH, OUTPUT_DIR, TEXTCNN_MODEL_PATH
 from issuesense.textcnn import TextCNN
@@ -131,6 +132,8 @@ def main() -> None:
     }
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    run_record = append_run(metrics)
+    metrics["experiment_run"] = run_record
     METRICS_PATH.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     write_error_analysis(metrics)
     print(json.dumps(metrics, indent=2))
