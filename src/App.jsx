@@ -38,6 +38,17 @@ function displayLabel(label) {
   return match?.label ?? label?.replaceAll("_", " ");
 }
 
+function isNeedsReview(result) {
+  return result?.status === "needs_review";
+}
+
+function outputTitle(result) {
+  if (!result) {
+    return "Awaiting issue packet";
+  }
+  return isNeedsReview(result) ? "Needs Review" : displayLabel(result.label);
+}
+
 function ParticleField({ count = 90 }) {
   const particles = useMemo(
     () =>
@@ -206,12 +217,35 @@ function TriageScene({ result, setResult }) {
         <span className="output-kicker">MODEL OUTPUT</span>
         {result ? (
           <>
-            <strong>{displayLabel(result.label)}</strong>
-            <div className="confidence-ring">
+            <span className={`status-pill ${isNeedsReview(result) ? "review" : "auto"}`}>
+              {isNeedsReview(result) ? "Human review recommended" : "Auto-classified"}
+            </span>
+            <strong>{outputTitle(result)}</strong>
+            <div className={`confidence-ring ${isNeedsReview(result) ? "low" : ""}`}>
               <span>{Math.round(result.confidence * 100)}%</span>
               confidence
             </div>
+            <div className="predicted-label">
+              Best model guess: <b>{displayLabel(result.label)}</b>
+            </div>
+            {result.top_predictions?.length > 0 && (
+              <div className="top-predictions">
+                {result.top_predictions.map((item) => (
+                  <div key={item.label}>
+                    <span>{displayLabel(item.label)}</span>
+                    <b>{Math.round(item.confidence * 100)}%</b>
+                  </div>
+                ))}
+              </div>
+            )}
             <p>{result.explanation?.reason}</p>
+            {result.review_reasons?.length > 0 && (
+              <ul className="review-reasons">
+                {result.review_reasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            )}
             <small>{result.model} · {result.latency_ms?.toFixed(2)} ms</small>
           </>
         ) : (
@@ -238,7 +272,7 @@ function CoreScene({ result }) {
       <div className="category-orbit">
         {categories.map((category, index) => (
           <motion.div
-            className={`category ${result?.label === category.value ? "active-category" : ""}`}
+            className={`category ${!isNeedsReview(result) && result?.label === category.value ? "active-category" : ""}`}
             key={category.value}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -318,7 +352,16 @@ function ExplainScene({ result }) {
       <div className="reasoning-panel">
         <span>QUERY</span>
         <p>{result?.query ?? "Classify an issue in the triage console to send a live query into this network."}</p>
-        <strong>Prediction: {result ? displayLabel(result.label) : "Waiting for model output"}</strong>
+        <strong>
+          Prediction: {result ? `${outputTitle(result)} (${displayLabel(result.label)})` : "Waiting for model output"}
+        </strong>
+        {result?.review_reasons?.length > 0 && (
+          <div className="review-panel">
+            {result.review_reasons.map((reason) => (
+              <p key={reason}>{reason}</p>
+            ))}
+          </div>
+        )}
         {examples.length > 0 && (
           <div className="evidence-stack">
             {examples.slice(0, 3).map((example) => (

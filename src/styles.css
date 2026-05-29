@@ -436,11 +436,76 @@ a {
   box-shadow: 0 0 34px rgba(53, 217, 255, 0.22);
 }
 
+.confidence-ring.low {
+  border-color: rgba(255, 95, 70, 0.5);
+  background: conic-gradient(rgba(255, 95, 70, 0.86), rgba(255, 157, 46, 0.72), rgba(6, 18, 31, 0.22));
+}
+
 .confidence-ring span {
   display: block;
   color: #04101c;
   font-size: 27px;
   font-weight: 950;
+}
+
+.status-pill {
+  justify-self: start;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.status-pill.auto {
+  border: 1px solid rgba(53, 217, 255, 0.4);
+  color: #8defff;
+  background: rgba(53, 217, 255, 0.12);
+}
+
+.status-pill.review {
+  border: 1px solid rgba(255, 95, 70, 0.44);
+  color: #ffd2c8;
+  background: rgba(255, 95, 70, 0.14);
+}
+
+.predicted-label {
+  color: #9fb6c8;
+  font-size: 13px;
+}
+
+.predicted-label b {
+  color: #ffbd75;
+}
+
+.top-predictions {
+  display: grid;
+  gap: 7px;
+}
+
+.top-predictions div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(141, 239, 255, 0.14);
+  border-radius: 12px;
+  color: #b8c8d8;
+  background: rgba(2, 8, 18, 0.36);
+}
+
+.top-predictions b {
+  color: #8defff;
+}
+
+.review-reasons {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 0 18px;
+  color: #ffd2c8;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .stream {
@@ -714,6 +779,22 @@ a {
 .evidence-chip span {
   color: #8aa1b5;
   font-size: 12px;
+}
+
+.review-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.review-panel p {
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 95, 70, 0.26);
+  border-radius: 12px;
+  color: #ffd2c8;
+  background: rgba(255, 95, 70, 0.1);
+  font-size: 13px;
 }
 
 .final-scene {

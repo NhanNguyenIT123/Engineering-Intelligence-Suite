@@ -43,6 +43,7 @@ def predict_baseline(text: str) -> dict:
         "model": "tfidf_logistic_regression",
         "label": ID_TO_LABEL[label_id],
         "confidence": float(probabilities[label_id]),
+        "top_predictions": top_predictions(probabilities),
         "latency_ms": (time.perf_counter() - started) * 1000,
     }
 
@@ -59,8 +60,20 @@ def predict_textcnn(text: str) -> dict:
         "model": "pytorch_textcnn",
         "label": ID_TO_LABEL[label_id],
         "confidence": float(probabilities[label_id].item()),
+        "top_predictions": top_predictions(probabilities.tolist()),
         "latency_ms": (time.perf_counter() - started) * 1000,
     }
+
+
+def top_predictions(probabilities, limit: int = 3) -> list[dict]:
+    ranked = sorted(enumerate(probabilities), key=lambda item: float(item[1]), reverse=True)
+    return [
+        {
+            "label": ID_TO_LABEL[int(index)],
+            "confidence": float(score),
+        }
+        for index, score in ranked[:limit]
+    ]
 
 
 def main() -> None:

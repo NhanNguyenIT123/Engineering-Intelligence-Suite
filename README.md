@@ -112,6 +112,8 @@ npm.cmd run build
 
 Important: the cinematic React site is the storytelling/demo layer. The real prediction is served by the Python code under `issuesense/`, and the measured results are documented in `docs/metrics.md`.
 
+The live classifier includes an uncertainty gate. Very short or ambiguous inputs such as `500 Server error` are marked as `needs_review` instead of being presented as reliable classifications. A prediction is auto-classified only when confidence, input length, and similar-example evidence are strong enough.
+
 ## Current Results
 
 Latest committed summary:
