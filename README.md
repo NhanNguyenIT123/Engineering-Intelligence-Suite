@@ -2,7 +2,7 @@
 
 IssueSense ML is a Python/PyTorch project for classifying engineering issue reports and test-report findings into practical categories such as software defect, requirement gap, test environment issue, data issue, performance issue, and integration issue.
 
-The project is designed for an AI Engineer Intern portfolio: it includes dataset generation, preprocessing, baseline modeling, PyTorch training, evaluation metrics, confusion matrix analysis, and an explanation layer based on similar labeled examples.
+The project is designed for an AI Engineer Intern portfolio: it includes dataset generation, preprocessing, baseline modeling, PyTorch training, challenge-set evaluation, confusion matrix analysis, error analysis, and an explanation layer based on similar labeled examples.
 
 ## Why This Project
 
@@ -46,6 +46,12 @@ cd D:\GITHUB\IssueSense-ML
 & D:\GITHUB\DevBrain-AI-Engineering-Intelligence-Platform\.venv\Scripts\python.exe -m issuesense.evaluate
 ```
 
+Or run the Windows helper:
+
+```powershell
+.\scripts\run_pipeline.ps1
+```
+
 For a standalone environment:
 
 ```powershell
@@ -69,12 +75,36 @@ Optional Streamlit demo:
 & D:\GITHUB\DevBrain-AI-Engineering-Intelligence-Platform\.venv\Scripts\python.exe -m streamlit run app\streamlit_app.py
 ```
 
+Or:
+
+```powershell
+.\scripts\run_app.ps1
+```
+
+## Current Results
+
+Latest committed summary:
+
+- Synthetic dataset: 540 generated engineering issue reports.
+- Manual challenge set: 36 noisier examples under `data/challenge`.
+- Synthetic test: both baseline and PyTorch TextCNN reach 1.000 accuracy / 1.000 macro F1.
+- Manual challenge:
+  - TF-IDF + Logistic Regression: 0.972 accuracy / 0.972 macro F1.
+  - PyTorch TextCNN: 0.861 accuracy / 0.863 macro F1.
+
+See:
+
+- `docs/metrics.md`
+- `docs/error-analysis.md`
+- `docs/model-card.md`
+- `docs/roadmap.md`
+
 ## Portfolio Claims
 
 Safe CV wording:
 
 - Built a PyTorch-based engineering issue classification system with dataset generation, preprocessing, baseline comparison, model training, and accuracy/F1 evaluation.
-- Compared TF-IDF Logistic Regression against a PyTorch TextCNN classifier and documented confusion matrix analysis, latency, and error cases.
+- Compared TF-IDF Logistic Regression against a PyTorch TextCNN classifier and documented synthetic-test metrics, manual challenge-set metrics, latency, confusion matrices, and error cases.
 - Added a retrieval-based explanation layer that cites similar labeled examples instead of inventing reasons.
 
 Avoid claiming production deployment or training a large language model. This project is a local supervised NLP/ML prototype.

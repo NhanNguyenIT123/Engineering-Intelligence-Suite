@@ -12,6 +12,10 @@ TEMPLATES = {
         "The button in {module} triggers the wrong API endpoint and updates a different record.",
         "{module} accepts invalid input and still returns success, causing incorrect state in the application.",
         "The calculation in {module} is off by one when {condition}, confirmed with three repeated runs.",
+        "{module} completes the action but the UI displays a different state than the API response.",
+        "{module} updates the audit log but leaves the main record in the old status.",
+        "The retry flow in {module} calls the wrong handler and changes unrelated data.",
+        "{module} returns success after invalid {field} input, even though validation should block it.",
     ],
     "requirement_gap": [
         "The expected behavior for {module} is not defined when {condition}; QA cannot decide whether this is a defect.",
@@ -20,6 +24,10 @@ TEMPLATES = {
         "The user story for {module} has no error-state requirement when the downstream service is unavailable.",
         "There is no requirement describing which role can perform {action} in {module}.",
         "The design mockup and requirement document disagree about the message shown after {action}.",
+        "The requirement does not define the approval threshold for {action} in {module}.",
+        "QA cannot verify {module} because acceptance criteria do not describe the fallback path.",
+        "The API spec and UX document disagree about whether {field} is optional or mandatory.",
+        "No acceptance criteria define retention time or download availability after {action}.",
     ],
     "test_environment_issue": [
         "The failure happens only on staging because {dependency} is configured with an expired certificate.",
@@ -28,6 +36,10 @@ TEMPLATES = {
         "The staging database was restored from an old snapshot, so {module} cannot find required fixtures.",
         "The test run is blocked because the mock server for {dependency} returns connection refused.",
         "{module} fails only on the QA machine where the browser driver version does not match the runtime.",
+        "{module} fails only in CI because the timezone or locale differs from local development.",
+        "The QA environment is missing the callback URL for {dependency}, so tests fail before application logic runs.",
+        "The shared test machine locks temporary files during {action}, causing intermittent failures.",
+        "The test container network cannot resolve {dependency}, but the same case passes locally.",
     ],
     "data_issue": [
         "{module} shows duplicated records because the imported CSV contains repeated customer identifiers.",
@@ -36,6 +48,10 @@ TEMPLATES = {
         "{module} cannot render the dashboard because the source data has mixed date formats.",
         "Search results are missing because the indexed dataset does not include recently migrated records.",
         "The model output is unstable because labels in the training file are inconsistent for similar examples.",
+        "The imported dataset has mixed UTC and local timestamps in {field}.",
+        "The CSV import trims leading zeros from {field}, changing the meaning of the value.",
+        "Two source systems use different precision for {field}, so totals do not reconcile.",
+        "The migration leaves null {field} values and {module} renders blank rows.",
     ],
     "performance_issue": [
         "{module} takes {duration} to load when the dataset has more than {count} records.",
@@ -44,6 +60,10 @@ TEMPLATES = {
         "The query plan for {module} performs a full table scan and exceeds the latency budget.",
         "Batch processing slows down after {count} records and the worker misses the scheduled window.",
         "{module} responds in {duration} on staging while the requirement is under 1s.",
+        "{module} exceeds the gateway timeout when exporting {count} rows.",
+        "The page renders correctly but first contentful paint is {duration} on the QA laptop.",
+        "{module} uses one database call per record and misses the batch SLA.",
+        "Memory usage grows during {action} and the worker is killed before completion.",
     ],
     "integration_issue": [
         "{module} fails after {dependency} changes the response field from statusCode to status_code.",
@@ -52,6 +72,10 @@ TEMPLATES = {
         "{module} cannot sync because the third-party API now requires an additional header.",
         "The payment sandbox accepts the request, but our service cannot parse the nested error payload.",
         "The message queue contract changed and {module} still publishes the old event schema.",
+        "The ERP connector sends {field} but the CRM endpoint expects a snake_case field name.",
+        "The webhook provider retries events and {module} does not handle the idempotency key.",
+        "The vendor API returns HTTP 200 with an error object and {module} treats it as success.",
+        "{dependency} changed the download URL format and {module} still calls the old path.",
     ],
 }
 
@@ -110,7 +134,7 @@ def main() -> None:
     rows = []
     row_id = 1
     for label, templates in TEMPLATES.items():
-        for _ in range(60):
+        for _ in range(90):
             text = render(rng.choice(templates), rng)
             rows.append(
                 {

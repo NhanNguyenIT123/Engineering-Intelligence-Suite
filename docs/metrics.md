@@ -11,17 +11,31 @@ Environment:
 Dataset:
 
 - Source: synthetic/curated educational templates
-- Total records: 360
+- Total records: 540
 - Labels: 6
-- Train / validation / test: 252 / 54 / 54
-- Class balance: 60 records per class
+- Train / validation / test: 378 / 81 / 81
+- Class balance: 90 records per class
 
-Model comparison:
+Challenge dataset:
+
+- Source: manually written challenge examples
+- Total records: 36
+- Class balance: 6 records per class
+- Purpose: test noisier, less template-like wording that is not used for training
+
+Synthetic test comparison:
 
 | Model | Test accuracy | Test macro F1 | Average latency |
 | --- | ---: | ---: | ---: |
-| TF-IDF + Logistic Regression | 1.000 | 1.000 | 0.035 ms/sample |
-| PyTorch TextCNN | 1.000 | 1.000 | 0.193 ms/sample |
+| TF-IDF + Logistic Regression | 1.000 | 1.000 | 0.023 ms/sample |
+| PyTorch TextCNN | 1.000 | 1.000 | 0.116 ms/sample |
+
+Manual challenge comparison:
+
+| Model | Challenge accuracy | Challenge macro F1 | Average latency |
+| --- | ---: | ---: | ---: |
+| TF-IDF + Logistic Regression | 0.972 | 0.972 | 0.036 ms/sample |
+| PyTorch TextCNN | 0.861 | 0.863 | 0.089 ms/sample |
 
 Confusion matrix label order:
 
@@ -32,19 +46,20 @@ Confusion matrix label order:
 5. `performance_issue`
 6. `integration_issue`
 
-Current test confusion matrix for both models:
+Synthetic test confusion matrix for both models:
 
 ```text
-[[9, 0, 0, 0, 0, 0],
- [0, 9, 0, 0, 0, 0],
- [0, 0, 9, 0, 0, 0],
- [0, 0, 0, 9, 0, 0],
- [0, 0, 0, 0, 9, 0],
- [0, 0, 0, 0, 0, 9]]
+[[14, 0, 0, 0, 0, 0],
+ [0, 14, 0, 0, 0, 0],
+ [0, 0, 13, 0, 0, 0],
+ [0, 0, 0, 13, 0, 0],
+ [0, 0, 0, 0, 14, 0],
+ [0, 0, 0, 0, 0, 13]]
 ```
 
 Interpretation:
 
 - These metrics prove the local ML pipeline works end to end.
-- The numbers are high because the current dataset is generated from controlled engineering templates.
-- Before using the project as a stronger CV claim, add a manually reviewed challenge set with noisier mixed wording and report metrics separately.
+- Synthetic-test scores are high because the generated dataset is controlled and class-balanced.
+- The manual challenge split is the more honest interview metric because it uses noisier examples that were not used during training.
+- TF-IDF is currently stronger on the small challenge set. The PyTorch TextCNN still demonstrates model training, GPU usage, and error analysis, but needs more manually reviewed data to generalize further.

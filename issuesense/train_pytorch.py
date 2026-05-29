@@ -48,7 +48,7 @@ def main() -> None:
     started = time.perf_counter()
     history = []
 
-    for epoch in range(1, 9):
+    for epoch in range(1, 13):
         model.train()
         total_loss = 0.0
         for input_ids, labels in train_loader:

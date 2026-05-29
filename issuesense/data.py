@@ -5,7 +5,7 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 
 from issuesense.labels import LABEL_TO_ID
-from issuesense.paths import DATASET_PATH
+from issuesense.paths import CHALLENGE_DATASET_PATH, DATASET_PATH
 from issuesense.preprocessing import normalize_text
 
 
@@ -61,3 +61,7 @@ def texts_and_labels(records: list[IssueRecord]) -> tuple[list[str], list[int]]:
     texts = [normalize_text(record.text) for record in records]
     labels = [LABEL_TO_ID[record.label] for record in records]
     return texts, labels
+
+
+def load_challenge_records(path: Path = CHALLENGE_DATASET_PATH) -> list[IssueRecord]:
+    return load_records(path)

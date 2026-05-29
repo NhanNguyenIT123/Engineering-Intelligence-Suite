@@ -1,0 +1,37 @@
+id,text,label,source
+CH-0001,"Checkout sometimes completes but the confirmation page shows a different order total than the API response after discount rounding.",software_bug,manual_reviewed_challenge
+CH-0002,"User can save a profile with an invalid phone number and the backend returns success instead of a validation error.",software_bug,manual_reviewed_challenge
+CH-0003,"The retry button calls the cancel endpoint after a failed upload, causing the document to be removed.",software_bug,manual_reviewed_challenge
+CH-0004,"Search filter by department returns employees from other departments when the keyword contains a slash.",software_bug,manual_reviewed_challenge
+CH-0005,"The dashboard displays yesterday's status after refresh even though the API returns the latest status.",software_bug,manual_reviewed_challenge
+CH-0006,"Approving a request updates the audit log but leaves the request state as pending.",software_bug,manual_reviewed_challenge
+CH-0007,"The story says managers can override the limit, but it does not define the approval threshold or required audit reason.",requirement_gap,manual_reviewed_challenge
+CH-0008,"QA cannot verify the failed-payment flow because the requirement does not say whether the user should retry or contact support.",requirement_gap,manual_reviewed_challenge
+CH-0009,"The API spec allows empty attachment lists, while the UX document marks attachment as mandatory.",requirement_gap,manual_reviewed_challenge
+CH-0010,"No acceptance criteria describe how long generated reports should remain downloadable.",requirement_gap,manual_reviewed_challenge
+CH-0011,"The feature request mentions role-based access but does not list which roles can export private data.",requirement_gap,manual_reviewed_challenge
+CH-0012,"The expected behavior is unclear when a device submits duplicate telemetry within the same second.",requirement_gap,manual_reviewed_challenge
+CH-0013,"The same test passes locally but fails in CI because the test runner has a different timezone setting.",test_environment_issue,manual_reviewed_challenge
+CH-0014,"Staging cannot reproduce the bug after the mock payment service was restarted with the wrong sandbox account.",test_environment_issue,manual_reviewed_challenge
+CH-0015,"Regression suite fails before login because the OAuth callback URL is missing from the QA environment.",test_environment_issue,manual_reviewed_challenge
+CH-0016,"The file upload scenario fails only on the shared QA machine where the antivirus locks temporary files.",test_environment_issue,manual_reviewed_challenge
+CH-0017,"The nightly job reports missing messages because the test message broker was purged during maintenance.",test_environment_issue,manual_reviewed_challenge
+CH-0018,"API tests intermittently fail due to DNS resolution errors inside the test container network.",test_environment_issue,manual_reviewed_challenge
+CH-0019,"Several imported users have lowercase country codes while downstream rules expect ISO uppercase values.",data_issue,manual_reviewed_challenge
+CH-0020,"The report total is wrong because two source systems use different currency precision for the same invoice.",data_issue,manual_reviewed_challenge
+CH-0021,"The training file contains near-duplicate issue descriptions with conflicting labels.",data_issue,manual_reviewed_challenge
+CH-0022,"The dashboard has blank rows because the migration left null department_id values for old employees.",data_issue,manual_reviewed_challenge
+CH-0023,"Analytics results changed after the CSV import trimmed leading zeros from product codes.",data_issue,manual_reviewed_challenge
+CH-0024,"The scoring pipeline rejects records where the created_at field mixes local time and UTC timestamps.",data_issue,manual_reviewed_challenge
+CH-0025,"The export endpoint takes 18 seconds for 20 thousand rows and frequently hits the gateway timeout.",performance_issue,manual_reviewed_challenge
+CH-0026,"Scrolling the workflow board becomes unresponsive after loading more than 800 cards.",performance_issue,manual_reviewed_challenge
+CH-0027,"The recommendation job consumes all available memory after processing large attachments.",performance_issue,manual_reviewed_challenge
+CH-0028,"Search latency increased from 300 ms to 4 seconds after enabling fuzzy matching.",performance_issue,manual_reviewed_challenge
+CH-0029,"The daily synchronization misses its SLA because each batch performs one database call per record.",performance_issue,manual_reviewed_challenge
+CH-0030,"The page is correct but first contentful paint exceeds 7 seconds on the standard QA laptop.",performance_issue,manual_reviewed_challenge
+CH-0031,"The ERP connector sends customerId but the CRM endpoint now expects customer_id.",integration_issue,manual_reviewed_challenge
+CH-0032,"Webhook retries create duplicate incidents because the receiver does not handle the provider's idempotency key.",integration_issue,manual_reviewed_challenge
+CH-0033,"The Teams notification flow fails after the app registration secret expired in Azure.",integration_issue,manual_reviewed_challenge
+CH-0034,"The device gateway accepts the payload but our parser rejects the vendor's new nested diagnostic object.",integration_issue,manual_reviewed_challenge
+CH-0035,"The document service changed its download URL format and our SharePoint sync still uses the old path.",integration_issue,manual_reviewed_challenge
+CH-0036,"The upstream API returns HTTP 200 with an error object, but our integration treats it as a successful update.",integration_issue,manual_reviewed_challenge
