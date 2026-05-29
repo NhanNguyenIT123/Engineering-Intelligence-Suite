@@ -5,6 +5,7 @@ import {
   BrainCircuit,
   ClipboardCheck,
   Cpu,
+  Database,
   DatabaseZap,
   FileSearch,
   Gauge,
@@ -53,18 +54,31 @@ const suiteModules = [
   {
     name: "IssueSense ML",
     role: "AI triage engine",
+    signal: "Classify -> Cause -> Evidence",
+    status: "Live",
     detail: "Classify issue type, estimate likely cause, retrieve similar cases, and flag uncertainty.",
   },
   {
     name: "EngiAgent",
     role: "Agentic workflow layer",
+    signal: "LangChain -> Tools -> 8D",
+    status: "Live",
     detail: "Expand triage findings into investigation plans, evidence-grounded summaries, and 8D drafts.",
   },
   {
     name: "QAForge AI",
     role: "QA validation layer",
+    signal: "Requirement -> Tests -> Coverage",
+    status: "Live",
     detail: "Turn confirmed risks into requirement-linked tests, edge cases, and coverage checks.",
   },
+];
+
+const suiteStats = [
+  { label: "Modules", value: "3" },
+  { label: "API endpoints", value: "6" },
+  { label: "Dataset records", value: "540" },
+  { label: "Challenge set", value: "36" },
 ];
 
 function displayLabel(label) {
@@ -162,13 +176,64 @@ function IntroScene() {
       <div className="scanner scanner-a" />
       <div className="scanner scanner-b" />
       <motion.div className="hero-copy" style={{ y: copyY }}>
-        <span className="system-chip">ENGINEERING INTELLIGENCE SUITE</span>
-        <h1>IssueSense ML</h1>
-        <p>AI triage engine for engineering issue classification and root-cause inspection.</p>
+        <span className="system-chip">BOSCH-LIKE ENGINEERING AI PORTFOLIO</span>
+        <h1>Engineering Intelligence Suite</h1>
+        <p>A connected AI workflow system for issue triage, agentic investigation, 8D drafting, and QA coverage validation.</p>
+        <div className="hero-module-strip">
+          {suiteModules.map((module) => (
+            <a
+              href={`#${module.name === "IssueSense ML" ? "triage" : module.name === "EngiAgent" ? "engiagent" : "qaforge"}`}
+              key={module.name}
+            >
+              <span>{module.role}</span>
+              <b>{module.name}</b>
+            </a>
+          ))}
+        </div>
       </motion.div>
       <div className="scroll-hint">
         <span />
         Enter the facility
+      </div>
+    </section>
+  );
+}
+
+function SuiteCommandCenter() {
+  return (
+    <section id="command" className="command-scene">
+      <ParticleField count={90} />
+      <div className="command-copy">
+        <span className="eyebrow">Suite Command Center</span>
+        <h2>Three AI modules, one engineering workflow.</h2>
+        <p>
+          The suite behaves like a layered operations system: triage first, investigation second, QA validation third.
+          Each module exposes its own endpoint and shares context through the handoff workflow.
+        </p>
+      </div>
+      <div className="command-board">
+        <div className="command-core">
+          <Database size={42} />
+          <span>Shared Context Bus</span>
+        </div>
+        <div className="suite-spine">
+          {suiteModules.map((module, index) => (
+            <div className="spine-node" key={module.name}>
+              <span>0{index + 1}</span>
+              <strong>{module.name}</strong>
+              <p>{module.signal}</p>
+            </div>
+          ))}
+        </div>
+        <div className="ops-grid">
+          {suiteStats.map((stat) => (
+            <div key={stat.label}>
+              <span>{stat.label}</span>
+              <b>{stat.value}</b>
+            </div>
+          ))}
+        </div>
+        <div className="pipeline-line" />
       </div>
     </section>
   );
@@ -217,7 +282,7 @@ function TriageScene({ result, setResult, onSendToEngiAgent, onSendToQAForge }) 
     <Scene
       id="triage"
       eyebrow="Live System / Triage Console"
-      title="Inject an issue into the machine."
+      title="Module 01: classify the incoming issue."
       body="Paste an engineering issue or test-report finding. IssueSense predicts the issue type, estimates likely cause, retrieves similar cases, and prepares the finding for deeper engineering workflows."
       className="triage-scene"
     >
@@ -299,7 +364,7 @@ function TriageScene({ result, setResult, onSendToEngiAgent, onSendToQAForge }) 
                 ))}
               </ul>
             )}
-            <small>{result.model} · {result.latency_ms?.toFixed(2)} ms</small>
+            <small>{result.model} - {result.latency_ms?.toFixed(2)} ms</small>
           </>
         ) : (
           <>
@@ -317,7 +382,7 @@ function CoreScene({ result }) {
     <Scene
       id="core"
       eyebrow="Scene 03 / Triage Core"
-      title="The first decision layer in a larger system."
+      title="IssueSense feeds the suite, not the other way around."
       body="IssueSense is not the final app. It is the triage engine that turns raw engineering findings into structured signals for agentic investigation and QA validation."
       className="core-scene"
     >
@@ -344,15 +409,17 @@ function SuiteMapScene() {
     <Scene
       id="suite"
       eyebrow="Scene 04 / Suite Architecture"
-      title="One module inside an engineering intelligence system."
-      body="The portfolio is organized as a suite: IssueSense triages findings, EngiAgent performs workflow reasoning, and QAForge converts risks into test coverage."
+      title="The umbrella connects the subsystems."
+      body="IssueSense, EngiAgent, and QAForge are presented as one engineering workflow. A triage result can become an 8D investigation draft or a requirement-linked QA plan."
       className="suite-scene"
     >
       <div className="suite-map">
         {suiteModules.map((module, index) => (
           <div className={`suite-node ${index === 0 ? "primary" : ""}`} key={module.name}>
+            <i>{module.status}</i>
             <span>{module.role}</span>
             <strong>{module.name}</strong>
+            <em>{module.signal}</em>
             <p>{module.detail}</p>
           </div>
         ))}
@@ -391,7 +458,7 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
     <Scene
       id="engiagent"
       eyebrow="Scene 05 / EngiAgent Investigation"
-      title="Turn triage into an 8D investigation draft."
+      title="Module 02: route evidence through an agent workflow."
       body="EngiAgent is the workflow layer. It reads the issue context, extracts evidence, builds an investigation summary, and drafts D1-D8 actions for human review."
       className="module-scene engiagent-scene"
     >
@@ -452,6 +519,13 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
                 </div>
               ))}
             </div>
+            {result.registered_tools?.length > 0 && (
+              <div className="registered-tool-strip">
+                {result.registered_tools.map((tool) => (
+                  <span key={tool}>{tool}</span>
+                ))}
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -490,7 +564,7 @@ function QAForgeScene({ input, setInput, triageResult, result, setResult }) {
     <Scene
       id="qaforge"
       eyebrow="Scene 06 / QAForge Validation"
-      title="Convert engineering risk into test coverage."
+      title="Module 03: convert risk into QA coverage."
       body="QAForge AI turns requirements or confirmed triage risks into manual test cases, traceability rows, and quality checks for weak or incomplete QA artifacts."
       className="module-scene qaforge-scene"
     >
@@ -728,7 +802,7 @@ function ExplainScene({ result }) {
             {examples.slice(0, 3).map((example) => (
               <div className="evidence-chip" key={example.id}>
                 <b>{example.id}</b>
-                <span>{displayLabel(example.label)} · {example.similarity.toFixed(2)}</span>
+                <span>{displayLabel(example.label)} - {example.similarity.toFixed(2)}</span>
               </div>
             ))}
           </div>
@@ -754,7 +828,7 @@ function FinalScene() {
       <div className="final-copy">
         <span className="system-chip">ENGINEERING INTELLIGENCE SUITE</span>
         <h2>Engineering Intelligence, Explained.</h2>
-        <p>IssueSense ML classifies the issue. EngiAgent expands it into an investigation and 8D draft. QAForge AI converts the risk into requirement-linked test coverage.</p>
+        <p>IssueSense ML classifies the issue. EngiAgent expands it into a LangChain-orchestrated 8D investigation. QAForge AI converts the risk into requirement-linked test coverage.</p>
         <a href="#top">Explore the Future of Engineering AI</a>
       </div>
     </section>
@@ -764,7 +838,7 @@ function FinalScene() {
 function NavRail() {
   return (
     <nav className="nav-rail" aria-label="Scene navigation">
-      {["top", "triage", "data", "core", "suite", "engiagent", "qaforge", "training", "evaluation", "analysis", "explain"].map((item) => (
+      {["top", "command", "triage", "data", "core", "suite", "engiagent", "qaforge", "training", "evaluation", "analysis", "explain"].map((item) => (
         <a href={`#${item}`} key={item}>
           <Sparkles size={14} />
         </a>
@@ -865,6 +939,7 @@ export function App() {
     <main id="top">
       <NavRail />
       <IntroScene />
+      <SuiteCommandCenter />
       <TriageScene
         result={result}
         setResult={setResult}
