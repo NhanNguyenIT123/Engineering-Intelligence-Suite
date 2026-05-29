@@ -799,6 +799,18 @@ a {
   line-height: 1;
 }
 
+.runtime-chip {
+  justify-self: start;
+  padding: 7px 10px;
+  border: 1px solid rgba(53, 217, 255, 0.36);
+  border-radius: 999px;
+  color: #8defff;
+  background: rgba(53, 217, 255, 0.1);
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
 .module-output p {
   margin: 0;
   color: #b8c8d8;
@@ -814,13 +826,20 @@ a {
   background: rgba(141, 239, 255, 0.28);
 }
 
+.agent-plan,
 .eight-d-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 10px;
 }
 
+.agent-plan {
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+}
+
+.agent-plan div,
 .eight-d-grid div,
+.guardrail-strip div,
 .trace-strip div,
 .qa-case-grid div,
 .coverage-grid div {
@@ -829,11 +848,14 @@ a {
   background: rgba(2, 8, 18, 0.42);
 }
 
+.agent-plan div,
 .eight-d-grid div {
   padding: 12px;
 }
 
+.agent-plan span,
 .eight-d-grid span,
+.guardrail-strip span,
 .qa-case-grid span,
 .coverage-grid span {
   display: block;
@@ -843,11 +865,36 @@ a {
   text-transform: uppercase;
 }
 
+.agent-plan b {
+  display: block;
+  margin-top: 6px;
+  color: #f8fcff;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .eight-d-grid p,
 .qa-case-grid p {
   margin-top: 6px;
   color: #c9d8e4;
   font-size: 12px;
+}
+
+.guardrail-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.guardrail-strip div {
+  padding: 12px;
+}
+
+.guardrail-strip b {
+  display: block;
+  margin-top: 6px;
+  color: #ffbd75;
+  font-size: 14px;
 }
 
 .trace-strip {
@@ -1536,7 +1583,9 @@ a {
   .analysis-lab,
   .experiment-strip,
   .suite-map,
+  .agent-plan,
   .eight-d-grid,
+  .guardrail-strip,
   .trace-strip,
   .coverage-grid,
   .qa-case-grid {

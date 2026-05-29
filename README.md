@@ -10,7 +10,7 @@ Implemented modules:
 
 IssueSense ML is a Python/PyTorch triage engine for classifying engineering issue reports and test-report findings into categories such as software defect, requirement gap, test environment issue, data issue, performance issue, and integration issue. It estimates likely cause, retrieves similar cases, flags uncertainty, and provides next investigation steps.
 
-EngiAgent and QAForge AI are MVP workflow modules connected to IssueSense output. EngiAgent converts a triage result into an investigation summary and 8D draft. QAForge converts a requirement or confirmed risk into test cases, traceability rows, coverage metrics, and QA quality checks.
+EngiAgent and QAForge AI are MVP workflow modules connected to IssueSense output. EngiAgent uses a LangChain Core runnable chain to convert a triage result into an investigation summary and 8D draft. QAForge converts a requirement or confirmed risk into test cases, traceability rows, coverage metrics, and QA quality checks.
 
 ```text
 Engineering Intelligence Suite
@@ -96,6 +96,30 @@ POST http://127.0.0.1:8765/qaforge/generate-tests
 ```
 
 The prediction API returns `likely_cause`, `cause_rationale`, `next_investigation_steps`, and `suite_context`. The React demo includes `Send to EngiAgent` and `Send to QAForge` actions that carry the live triage context into investigation or QA validation scenes.
+
+## EngiAgent Runtime
+
+EngiAgent is no longer just a static template. The default runtime is:
+
+```text
+ENGIAGENT_RUNTIME=langchain
+```
+
+With `langchain-core` installed, `POST /engiagent/8d-draft` runs a LangChain Core runnable chain:
+
+```text
+issue_intake_parser -> triage_context_router -> eight_d_workflow_builder -> grounding_guardrail
+```
+
+The response includes:
+
+- `agent_runtime`: runtime used by the module.
+- `agent_plan`: orchestration steps.
+- `tool_trace`: tool-level execution trace.
+- `guardrails`: completeness and grounding checks.
+- `eight_d`: D1-D8 investigation draft.
+
+If `langchain-core` is missing, the endpoint falls back to `deterministic_fallback` so the demo still runs on a fresh machine.
 
 ## Cinematic Web Experience
 

@@ -62,7 +62,7 @@ def suite_modules():
             },
             {
                 "name": "EngiAgent",
-                "role": "Agentic investigation and 8D draft layer",
+                "role": "LangChain Core investigation and 8D draft layer",
                 "endpoint": "POST /engiagent/8d-draft",
                 "status": "mvp",
             },

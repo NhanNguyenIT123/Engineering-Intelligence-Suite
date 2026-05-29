@@ -412,7 +412,18 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
         {result ? (
           <>
             <strong>8D Draft Ready</strong>
+            <span className="runtime-chip">{result.agent_runtime}</span>
             <p>{result.investigation_summary}</p>
+            {result.agent_plan?.length > 0 && (
+              <div className="agent-plan">
+                {result.agent_plan.map((step, index) => (
+                  <div key={step}>
+                    <span>STEP {index + 1}</span>
+                    <b>{step}</b>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="eight-d-grid">
               {dEntries.map(([key, value]) => (
                 <div key={key}>
@@ -421,6 +432,18 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
                 </div>
               ))}
             </div>
+            {result.guardrails && (
+              <div className="guardrail-strip">
+                {Object.entries(result.guardrails)
+                  .filter(([key]) => key !== "missing_fields")
+                  .map(([key, value]) => (
+                    <div key={key}>
+                      <span>{key.replaceAll("_", " ")}</span>
+                      <b>{String(value)}</b>
+                    </div>
+                  ))}
+              </div>
+            )}
             <div className="trace-strip">
               {result.tool_trace.map((trace) => (
                 <div key={trace.tool}>

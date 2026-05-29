@@ -12,9 +12,11 @@ class SuiteModuleTests(unittest.TestCase):
         )
 
         self.assertEqual(result["module"], "EngiAgent")
+        self.assertIn(result["agent_runtime"], {"langchain_core_runnable_chain", "deterministic_fallback"})
         self.assertEqual(len(result["eight_d"]), 8)
         self.assertIn("contract", result["eight_d"]["D6_validation_plan"].lower())
         self.assertGreaterEqual(len(result["tool_trace"]), 3)
+        self.assertTrue(result.get("guardrails", {"complete_8d_fields": True})["complete_8d_fields"])
 
     def test_qaforge_generates_traceable_test_plan(self):
         result = generate_test_plan(

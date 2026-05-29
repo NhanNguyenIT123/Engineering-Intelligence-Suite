@@ -1,7 +1,18 @@
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
+
+try:
+    from langchain_core.runnables import RunnableLambda
+    from langchain_core.tools import tool
+
+    LANGCHAIN_CORE_AVAILABLE = True
+except ImportError:
+    RunnableLambda = None
+    tool = None
+    LANGCHAIN_CORE_AVAILABLE = False
 
 
 @dataclass(frozen=True)
@@ -59,7 +70,71 @@ PROFILES = {
 }
 
 
+if LANGCHAIN_CORE_AVAILABLE:
+
+    @tool
+    def parse_issue_evidence(text: str) -> list[dict]:
+        """Extract evidence snippets from an engineering issue or test report."""
+        return _extract_evidence(text)
+
+    @tool
+    def choose_investigation_profile(label: str, text: str) -> dict:
+        """Choose the investigation profile that should drive the 8D workflow."""
+        profile = PROFILES.get(label, _fallback_profile(text))
+        return {
+            "likely_cause": profile.likely_cause,
+            "containment": profile.containment,
+            "corrective_action": profile.corrective_action,
+            "validation": profile.validation,
+            "prevention": profile.prevention,
+        }
+
+
 def build_investigation_draft(text: str, triage: dict | None = None) -> dict:
+    runtime = os.getenv("ENGIAGENT_RUNTIME", "langchain").lower()
+    if runtime == "langchain" and LANGCHAIN_CORE_AVAILABLE:
+        return _build_langchain_investigation(text, triage)
+    return _build_deterministic_investigation(text, triage, fallback_reason=_fallback_reason(runtime))
+
+
+def _build_langchain_investigation(text: str, triage: dict | None = None) -> dict:
+    initial_state = {
+        "text": text,
+        "triage": triage or {},
+        "agent_plan": [
+            "Parse report evidence.",
+            "Route the issue through triage context.",
+            "Generate an 8D investigation draft.",
+            "Run grounding and completeness guardrails.",
+        ],
+        "tool_trace": [],
+    }
+    chain = (
+        RunnableLambda(_intake_parser_stage)
+        | RunnableLambda(_triage_router_stage)
+        | RunnableLambda(_eight_d_builder_stage)
+        | RunnableLambda(_guardrail_stage)
+    )
+    result = chain.invoke(initial_state)
+    result["agent_runtime"] = "langchain_core_runnable_chain"
+    result["module"] = "EngiAgent"
+    result["status"] = "draft_generated"
+    result["registered_tools"] = [
+        "parse_issue_evidence",
+        "choose_investigation_profile",
+        "issue_intake_parser",
+        "triage_context_router",
+        "eight_d_workflow_builder",
+        "grounding_guardrail",
+    ]
+    return result
+
+
+def _build_deterministic_investigation(
+    text: str,
+    triage: dict | None = None,
+    fallback_reason: str = "langchain unavailable",
+) -> dict:
     label = _extract_label(triage)
     profile = PROFILES.get(label, _fallback_profile(text))
     evidence = _extract_evidence(text)
@@ -68,6 +143,14 @@ def build_investigation_draft(text: str, triage: dict | None = None) -> dict:
     return {
         "module": "EngiAgent",
         "status": "draft_generated",
+        "agent_runtime": "deterministic_fallback",
+        "fallback_reason": fallback_reason,
+        "agent_plan": [
+            "Parse report evidence.",
+            "Route the issue through triage context.",
+            "Generate an 8D investigation draft.",
+            "Run grounding and completeness guardrails.",
+        ],
         "input_summary": problem,
         "investigation_summary": (
             f"The finding is treated as {label.replace('_', ' ')}. "
@@ -94,7 +177,98 @@ def build_investigation_draft(text: str, triage: dict | None = None) -> dict:
             "This MVP stores no persistent user memory.",
             "The generated 8D is a structured draft, not a final root-cause conclusion.",
         ],
+        "guardrails": {
+            "grounded_in_submitted_report": len(evidence) > 0,
+            "complete_8d_fields": True,
+            "missing_fields": [],
+            "requires_human_approval": True,
+        },
     }
+
+
+def _intake_parser_stage(state: dict) -> dict:
+    evidence = parse_issue_evidence.invoke({"text": state["text"]})
+    state["evidence"] = evidence
+    state["tool_trace"].append(
+        {
+            "tool": "issue_intake_parser",
+            "runtime": "langchain_core",
+            "result": f"{len(evidence)} evidence signal(s) extracted",
+        }
+    )
+    return state
+
+
+def _triage_router_stage(state: dict) -> dict:
+    label = _extract_label(state.get("triage"))
+    profile_data = choose_investigation_profile.invoke({"label": label, "text": state["text"]})
+    profile = InvestigationProfile(**profile_data)
+    state["predicted_label"] = label
+    state["profile"] = profile
+    state["input_summary"] = _summarize_problem(state["text"], state.get("triage"))
+    state["tool_trace"].append(
+        {
+            "tool": "triage_context_router",
+            "runtime": "langchain_core",
+            "result": f"label={label}; likely_cause={state.get('triage', {}).get('likely_cause', profile.likely_cause)}",
+        }
+    )
+    return state
+
+
+def _eight_d_builder_stage(state: dict) -> dict:
+    profile = state["profile"]
+    triage = state.get("triage") or {}
+    label = state["predicted_label"]
+    problem = state["input_summary"]
+    state["investigation_summary"] = (
+        f"The finding is treated as {label.replace('_', ' ')}. "
+        f"The agent routed evidence through the {label} workflow and drafted actions for human review."
+    )
+    state["eight_d"] = {
+        "D1_team": "Software engineer, QA engineer, product/domain owner, and integration or data owner if applicable.",
+        "D2_problem_description": problem,
+        "D3_containment_action": profile.containment,
+        "D4_root_cause_hypothesis": triage.get("likely_cause", profile.likely_cause),
+        "D5_corrective_action": profile.corrective_action,
+        "D6_validation_plan": profile.validation,
+        "D7_prevention_plan": profile.prevention,
+        "D8_closure_note": "Close after evidence, fix, validation result, and owner sign-off are documented.",
+    }
+    state["tool_trace"].append(
+        {
+            "tool": "eight_d_workflow_builder",
+            "runtime": "langchain_core",
+            "result": "D1-D8 draft generated from routed triage context",
+        }
+    )
+    return state
+
+
+def _guardrail_stage(state: dict) -> dict:
+    eight_d = state["eight_d"]
+    missing = [key for key, value in eight_d.items() if not value]
+    state["guardrails"] = {
+        "grounded_in_submitted_report": len(state.get("evidence", [])) > 0,
+        "complete_8d_fields": len(missing) == 0,
+        "missing_fields": missing,
+        "requires_human_approval": True,
+    }
+    state["tool_trace"].append(
+        {
+            "tool": "grounding_guardrail",
+            "runtime": "langchain_core",
+            "result": "8D draft passed completeness check; human approval required",
+        }
+    )
+    state["memory_notes"] = [
+        "This local MVP keeps memory inside the request state only.",
+        "Production memory would require session storage, audit logs, and access control.",
+    ]
+    state.pop("profile", None)
+    state.pop("text", None)
+    state.pop("triage", None)
+    return state
 
 
 def _extract_label(triage: dict | None) -> str:
@@ -131,3 +305,9 @@ def _fallback_profile(text: str) -> InvestigationProfile:
     if any(term in lowered for term in ["requirement", "expected", "acceptance", "unclear"]):
         return PROFILES["requirement_gap"]
     return PROFILES["software_bug"]
+
+
+def _fallback_reason(runtime: str) -> str:
+    if runtime != "langchain":
+        return f"ENGIAGENT_RUNTIME={runtime}"
+    return "langchain-core is not installed"

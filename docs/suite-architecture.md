@@ -46,16 +46,23 @@ MVP investigation workflow layer for engineering problem solving and 8D assistan
 
 Implemented capabilities:
 
+- runs a LangChain Core runnable chain by default
 - accepts raw report text and optional IssueSense triage context
 - extracts evidence snippets
 - generates investigation summary
 - drafts D1-D8 fields
-- returns a simple tool trace and memory notes
+- returns agent plan, tool trace, guardrails, and memory notes
 
 Endpoint:
 
 ```text
 POST /engiagent/8d-draft
+```
+
+Runtime:
+
+```text
+issue_intake_parser -> triage_context_router -> eight_d_workflow_builder -> grounding_guardrail
 ```
 
 ### QAForge AI
