@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720">
+  <defs>
+    <filter id="netGlow"><feGaussianBlur stdDeviation="5"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <g filter="url(#netGlow)" stroke-width="3">
+    <g stroke="#35d9ff" opacity=".65">
+      <path d="M170 180 L400 280 L650 170 L830 310 L620 520 L350 500 L170 180"/>
+      <path d="M400 280 L620 520 M650 170 L350 500 M830 310 L400 280"/>
+    </g>
+    <g fill="#081827" stroke="#35d9ff">
+      <circle cx="170" cy="180" r="38"/><circle cx="400" cy="280" r="48"/><circle cx="650" cy="170" r="42"/>
+      <circle cx="830" cy="310" r="38"/><circle cx="620" cy="520" r="52"/><circle cx="350" cy="500" r="44"/>
+    </g>
+    <g fill="#ff9d2e">
+      <circle cx="400" cy="280" r="10"/><circle cx="620" cy="520" r="10"/><circle cx="650" cy="170" r="8"/>
+    </g>
+  </g>
+</svg>

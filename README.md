@@ -81,6 +81,29 @@ Or:
 .\scripts\run_app.ps1
 ```
 
+## Cinematic Web Experience
+
+The repository also includes a React/Vite cinematic product experience for portfolio presentation. It is intentionally visual-first: animated engineering city, report streams, AI core, training chamber, evaluation arena, and explainable-AI network.
+
+```powershell
+npm.cmd install
+npm.cmd run dev
+```
+
+Open the local URL printed by Vite, usually:
+
+```text
+http://127.0.0.1:5176
+```
+
+Build check:
+
+```powershell
+npm.cmd run build
+```
+
+Important: the cinematic React site is a storytelling/demo layer. The real ML pipeline is the Python code under `issuesense/`, and the measured results are documented in `docs/metrics.md`.
+
 ## Current Results
 
 Latest committed summary:

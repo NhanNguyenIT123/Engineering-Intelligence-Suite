@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520">
+  <defs>
+    <filter id="packetGlow"><feGaussianBlur stdDeviation="3"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <g filter="url(#packetGlow)">
+    <g fill="#081827" stroke="#35d9ff" stroke-width="2">
+      <rect x="40" y="80" width="150" height="82" rx="10"/><rect x="260" y="48" width="170" height="92" rx="10"/>
+      <rect x="525" y="110" width="150" height="82" rx="10"/><rect x="710" y="250" width="150" height="82" rx="10"/>
+      <rect x="120" y="320" width="170" height="92" rx="10"/><rect x="430" y="340" width="170" height="92" rx="10"/>
+    </g>
+    <g stroke="#8df1ff" stroke-width="3">
+      <path d="M68 112 H160 M68 135 H135"/><path d="M288 82 H390 M288 107 H360"/>
+      <path d="M553 143 H640 M553 166 H620"/><path d="M738 284 H830 M738 307 H805"/>
+      <path d="M148 355 H250 M148 382 H220"/><path d="M458 374 H560 M458 400 H535"/>
+    </g>
+    <g fill="#ff9d2e">
+      <circle cx="178" cy="96" r="5"/><circle cx="410" cy="68" r="5"/><circle cx="657" cy="128" r="5"/>
+      <circle cx="840" cy="268" r="5"/><circle cx="270" cy="340" r="5"/><circle cx="580" cy="358" r="5"/>
+    </g>
+  </g>
+</svg>

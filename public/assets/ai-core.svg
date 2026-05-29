@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900">
+  <defs>
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".18" stop-color="#56e6ff"/>
+      <stop offset=".48" stop-color="#1769ff"/>
+      <stop offset="1" stop-color="#06111f" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blurGlow">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <circle cx="450" cy="450" r="350" fill="url(#coreGlow)" opacity=".52"/>
+  <g fill="none" filter="url(#blurGlow)">
+    <circle cx="450" cy="450" r="245" stroke="#39e6ff" stroke-width="4" stroke-dasharray="28 18"/>
+    <circle cx="450" cy="450" r="315" stroke="#ff9d2e" stroke-width="3" stroke-dasharray="10 22"/>
+    <ellipse cx="450" cy="450" rx="360" ry="120" stroke="#5a87ff" stroke-width="3" stroke-dasharray="18 14"/>
+    <ellipse cx="450" cy="450" rx="120" ry="360" stroke="#39e6ff" stroke-width="3" stroke-dasharray="18 14"/>
+  </g>
+  <g stroke="#8df1ff" stroke-width="2" opacity=".85">
+    <path d="M450 450 L270 300 L340 620 Z" fill="none"/>
+    <path d="M450 450 L620 280 L680 590 Z" fill="none"/>
+    <path d="M270 300 L620 280 M340 620 L680 590 M270 300 L680 590" fill="none"/>
+  </g>
+  <g filter="url(#blurGlow)">
+    <circle cx="450" cy="450" r="54" fill="#d9fbff"/>
+    <circle cx="270" cy="300" r="15" fill="#35d9ff"/>
+    <circle cx="620" cy="280" r="15" fill="#ff9d2e"/>
+    <circle cx="340" cy="620" r="15" fill="#5b8cff"/>
+    <circle cx="680" cy="590" r="15" fill="#35d9ff"/>
+  </g>
+</svg>
