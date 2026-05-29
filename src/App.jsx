@@ -919,27 +919,31 @@ function FinalScene() {
 }
 
 const suiteNavItems = [
-  { id: "top", label: "Overview" },
-  { id: "command", label: "Run Suite" },
+  { id: "overview", label: "Overview" },
+  { id: "run", label: "Run Suite" },
   { id: "triage", label: "Triage" },
-  { id: "engiagent", label: "Agent" },
-  { id: "qaforge", label: "QA" },
-  { id: "evaluation", label: "Metrics" },
+  { id: "agent", label: "Agent" },
+  { id: "qa", label: "QA" },
+  { id: "metrics", label: "Metrics" },
 ];
 
-function SuiteNav() {
+function SuiteNav({ activeView, setActiveView }) {
   return (
     <nav className="suite-nav" aria-label="Suite navigation">
-      <a href="#top" className="suite-nav-brand">
+      <button className="suite-nav-brand" onClick={() => setActiveView("overview")}>
         Engineering Intelligence Suite
-      </a>
+      </button>
       <div>
         {suiteNavItems.map((item) => (
-          <a href={`#${item.id}`} key={item.id}>
-          <Sparkles size={14} />
+          <button
+            className={activeView === item.id ? "active" : ""}
+            key={item.id}
+            onClick={() => setActiveView(item.id)}
+          >
+            <Sparkles size={14} />
             {item.label}
-        </a>
-      ))}
+          </button>
+        ))}
       </div>
     </nav>
   );
@@ -954,13 +958,15 @@ export function App() {
   const [qaResult, setQaResult] = useState(null);
   const [suiteIssue, setSuiteIssue] = useState(samples[0]);
   const [suiteResult, setSuiteResult] = useState(null);
+  const [activeView, setActiveView] = useState("overview");
 
   function sendToEngiAgent(issueText, triageResult) {
     const cause = triageResult?.triage?.likely_cause
       ? `\n\nLikely cause from IssueSense: ${triageResult.triage.likely_cause}`
       : "";
     setEngiInput(`${issueText}${cause}`);
-    document.getElementById("engiagent")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveView("agent");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function sendToQAForge(issueText, triageResult) {
@@ -972,7 +978,8 @@ export function App() {
         `Likely cause: ${cause}.\n` +
         "Generate tests for expected behavior, invalid input, edge cases, regression, and integration impact."
     );
-    document.getElementById("qaforge")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveView("qa");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   useEffect(() => {
@@ -1037,42 +1044,61 @@ export function App() {
 
   return (
     <main id="top">
-      <SuiteNav />
-      <IntroScene />
-      <SuiteCommandCenter
-        suiteIssue={suiteIssue}
-        setSuiteIssue={setSuiteIssue}
-        suiteResult={suiteResult}
-        setSuiteResult={setSuiteResult}
-      />
-      <TriageScene
-        result={result}
-        setResult={setResult}
-        onSendToEngiAgent={sendToEngiAgent}
-        onSendToQAForge={sendToQAForge}
-      />
-      <DataScene />
-      <CoreScene result={result} />
-      <SuiteMapScene />
-      <EngiAgentScene
-        input={engiInput}
-        setInput={setEngiInput}
-        triageResult={result}
-        result={engiResult}
-        setResult={setEngiResult}
-      />
-      <QAForgeScene
-        input={qaInput}
-        setInput={setQaInput}
-        triageResult={result}
-        result={qaResult}
-        setResult={setQaResult}
-      />
-      <TrainingScene />
-      <EvaluationScene metricsData={metricsData} />
-      <DatasetAnalysisScene metricsData={metricsData} />
-      <ExplainScene result={result} />
-      <FinalScene />
+      <SuiteNav activeView={activeView} setActiveView={setActiveView} />
+      <div className="view-shell">
+        {activeView === "overview" && (
+          <>
+            <IntroScene />
+            <SuiteMapScene />
+          </>
+        )}
+        {activeView === "run" && (
+          <SuiteCommandCenter
+            suiteIssue={suiteIssue}
+            setSuiteIssue={setSuiteIssue}
+            suiteResult={suiteResult}
+            setSuiteResult={setSuiteResult}
+          />
+        )}
+        {activeView === "triage" && (
+          <>
+            <TriageScene
+              result={result}
+              setResult={setResult}
+              onSendToEngiAgent={sendToEngiAgent}
+              onSendToQAForge={sendToQAForge}
+            />
+            <CoreScene result={result} />
+            <ExplainScene result={result} />
+          </>
+        )}
+        {activeView === "agent" && (
+          <EngiAgentScene
+            input={engiInput}
+            setInput={setEngiInput}
+            triageResult={result}
+            result={engiResult}
+            setResult={setEngiResult}
+          />
+        )}
+        {activeView === "qa" && (
+          <QAForgeScene
+            input={qaInput}
+            setInput={setQaInput}
+            triageResult={result}
+            result={qaResult}
+            setResult={setQaResult}
+          />
+        )}
+        {activeView === "metrics" && (
+          <>
+            <DataScene />
+            <TrainingScene />
+            <EvaluationScene metricsData={metricsData} />
+            <DatasetAnalysisScene metricsData={metricsData} />
+          </>
+        )}
+      </div>
       <div className="ambient-glow ambient-a" />
       <div className="ambient-glow ambient-b" />
       <Gauge className="corner-glyph" />
