@@ -7,6 +7,7 @@ from issuesense.experiment_tracking import load_runs
 from issuesense.paths import METRICS_PATH
 from issuesense.preprocessing import tokenize
 from issuesense.predict import predict_baseline, predict_textcnn
+from issuesense.triage import build_triage_details
 import json
 
 
@@ -66,6 +67,13 @@ def predict(request: PredictRequest):
             "matching_evidence_count": evidence_matches,
         }
         prediction["explanation"] = explanation
+        prediction["triage"] = build_triage_details(
+            request.text,
+            prediction["label"],
+            prediction["confidence"],
+            prediction["status"],
+            evidence_matches,
+        )
         return prediction
     except FileNotFoundError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc

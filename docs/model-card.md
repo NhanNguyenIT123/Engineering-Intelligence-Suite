@@ -2,7 +2,7 @@
 
 ## Intended Use
 
-IssueSense ML classifies short engineering issue reports and test-report findings into triage categories:
+IssueSense ML is the AI triage engine inside Engineering Intelligence Suite. It classifies short engineering issue reports and test-report findings into triage categories:
 
 - software defect
 - requirement gap
@@ -38,7 +38,7 @@ The challenge split is more important for interview discussion because it is clo
 - The dataset is still small and not collected from a real enterprise issue tracker.
 - High synthetic-test performance does not prove production generalization.
 - The model may confuse software bugs with integration issues when API behavior and implementation behavior overlap.
-- The model does not perform root-cause analysis; it predicts a triage category and retrieves similar examples for explanation.
+- The model does not perform full root-cause analysis. It estimates a likely cause category from wording and evidence, then provides next investigation steps for a human or downstream agent workflow.
 
 ## Next Improvements
 

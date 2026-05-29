@@ -1,12 +1,30 @@
-# IssueSense ML
+# Engineering Intelligence Suite
 
-IssueSense ML is a Python/PyTorch project for classifying engineering issue reports and test-report findings into practical categories such as software defect, requirement gap, test environment issue, data issue, performance issue, and integration issue.
+Engineering Intelligence Suite is an AI-assisted engineering workflow portfolio. It is organized as a set of modules that support issue triage, agentic investigation, and QA validation.
 
-The project is designed for an AI Engineer Intern portfolio: it includes dataset generation, preprocessing, baseline modeling, PyTorch training, challenge-set evaluation, confusion matrix analysis, error analysis, and an explanation layer based on similar labeled examples.
+Current implemented module:
+
+> **IssueSense ML - AI Triage Engine for Engineering Intelligence Suite**
+
+IssueSense ML is a Python/PyTorch triage engine for classifying engineering issue reports and test-report findings into practical categories such as software defect, requirement gap, test environment issue, data issue, performance issue, and integration issue. It estimates likely cause, retrieves similar cases, flags uncertainty, and provides next investigation steps.
+
+Planned suite modules:
+
+```text
+Engineering Intelligence Suite
+├── IssueSense ML
+│   └── AI triage, likely cause, uncertainty, similar cases, investigation steps
+├── EngiAgent
+│   └── RAG agent, tool orchestration, memory, engineering investigation, 8D workflow
+└── QAForge AI
+    └── AI-assisted test design, requirement coverage, QA artifact validation
+```
+
+The project is designed for an AI Engineer Intern portfolio: it includes dataset generation, preprocessing, baseline modeling, PyTorch training, challenge-set evaluation, confusion matrix analysis, error analysis, uncertainty handling, and an explanation layer based on similar labeled examples.
 
 ## Why This Project
 
-Engineering teams often receive noisy issue reports from testing, QA, APIs, logs, and user workflows. IssueSense ML turns those reports into structured categories so teams can triage faster and explain why a finding was classified a certain way.
+Engineering teams often receive noisy issue reports from testing, QA, APIs, logs, and user workflows. IssueSense ML turns those reports into structured triage findings so a larger engineering intelligence system can inspect cause, retrieve evidence, and decide the next workflow.
 
 This is not an LLM-training project. The classifier is a supervised ML model trained on a synthetic/curated educational dataset, with a lightweight retrieval layer for explanations.
 
@@ -30,8 +48,9 @@ flowchart LR
   B --> F["Similar example retrieval"]
   E --> G["Grounded explanation"]
   F --> G
-  C --> H["Metrics"]
-  D --> H
+  G --> H["Likely cause + investigation steps"]
+  C --> I["Metrics"]
+  D --> I
 ```
 
 ## Quick Start
@@ -114,6 +133,8 @@ Important: the cinematic React site is the storytelling/demo layer. The real pre
 
 The live classifier includes an uncertainty gate. Very short or ambiguous inputs such as `500 Server error` are marked as `needs_review` instead of being presented as reliable classifications. A prediction is auto-classified only when confidence, input length, and similar-example evidence are strong enough.
 
+The API also returns `likely_cause`, `cause_rationale`, `next_investigation_steps`, and `suite_context`. These fields make IssueSense ML behave like a feature inside a larger engineering intelligence platform instead of a standalone label classifier.
+
 ## Experiment Tracking
 
 Every evaluation run appends a compact JSONL record to `outputs/experiments/runs.jsonl` with:
@@ -165,8 +186,8 @@ See:
 
 Safe CV wording:
 
-- Built a PyTorch-based engineering issue classification system with dataset generation, preprocessing, baseline comparison, model training, and accuracy/F1 evaluation.
+- Built IssueSense ML, a PyTorch-based AI triage engine inside an Engineering Intelligence Suite that classifies engineering issues, estimates likely cause, retrieves similar cases, and flags uncertain predictions for human review.
 - Compared TF-IDF Logistic Regression against a PyTorch TextCNN classifier and documented synthetic-test metrics, manual challenge-set metrics, latency, confusion matrices, and error cases.
-- Added a retrieval-based explanation layer that cites similar labeled examples instead of inventing reasons.
+- Added a retrieval-based explanation layer with likely-cause inspection and next investigation steps to help users validate model predictions.
 
 Avoid claiming production deployment or training a large language model. This project is a local supervised NLP/ML prototype.

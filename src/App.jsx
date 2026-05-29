@@ -33,6 +33,24 @@ const samples = [
   "The specification does not mention what should happen when the user cancels payment after OTP verification.",
 ];
 
+const suiteModules = [
+  {
+    name: "IssueSense ML",
+    role: "AI triage engine",
+    detail: "Classify issue type, estimate likely cause, retrieve similar cases, and flag uncertainty.",
+  },
+  {
+    name: "EngiAgent",
+    role: "Agentic workflow layer",
+    detail: "Expand triage findings into investigation plans, evidence-grounded summaries, and 8D drafts.",
+  },
+  {
+    name: "QAForge AI",
+    role: "QA validation layer",
+    detail: "Turn confirmed risks into requirement-linked tests, edge cases, and coverage checks.",
+  },
+];
+
 function displayLabel(label) {
   const match = categories.find((category) => category.value === label);
   return match?.label ?? label?.replaceAll("_", " ");
@@ -115,9 +133,9 @@ function IntroScene() {
       <div className="scanner scanner-a" />
       <div className="scanner scanner-b" />
       <motion.div className="hero-copy" style={{ y: copyY }}>
-        <span className="system-chip">ENGINEERING ISSUE TRIAGE AI</span>
+        <span className="system-chip">ENGINEERING INTELLIGENCE SUITE</span>
         <h1>IssueSense ML</h1>
-        <p>Transform engineering issues into explainable AI insights.</p>
+        <p>AI triage engine for engineering issue classification and root-cause inspection.</p>
       </motion.div>
       <div className="scroll-hint">
         <span />
@@ -180,7 +198,7 @@ function TriageScene({ result, setResult }) {
       id="triage"
       eyebrow="Live System / Triage Console"
       title="Inject an issue into the machine."
-      body="Paste an engineering issue or test-report finding. The cinematic layer calls the local Python model, then carries the prediction into the core and explanation scenes."
+      body="Paste an engineering issue or test-report finding. IssueSense predicts the issue type, estimates likely cause, retrieves similar cases, and prepares the finding for deeper engineering workflows."
       className="triage-scene"
     >
       <div className="triage-console">
@@ -239,6 +257,11 @@ function TriageScene({ result, setResult }) {
               </div>
             )}
             <p>{result.explanation?.reason}</p>
+            {result.triage?.likely_cause && (
+              <div className="cause-preview">
+                Likely cause: <b>{result.triage.likely_cause}</b>
+              </div>
+            )}
             {result.review_reasons?.length > 0 && (
               <ul className="review-reasons">
                 {result.review_reasons.map((reason) => (
@@ -263,9 +286,9 @@ function CoreScene({ result }) {
   return (
     <Scene
       id="core"
-      eyebrow="Scene 03 / AI Classification Core"
-      title="A classifier at the center of the machine."
-      body="The PyTorch TextCNN model learns issue patterns while the baseline model provides a transparent comparison point."
+      eyebrow="Scene 03 / Triage Core"
+      title="The first decision layer in a larger system."
+      body="IssueSense is not the final app. It is the triage engine that turns raw engineering findings into structured signals for agentic investigation and QA validation."
       className="core-scene"
     >
       <Asset src="/assets/ai-core.svg" className="ai-core" alt="AI classification core" />
@@ -286,11 +309,35 @@ function CoreScene({ result }) {
   );
 }
 
+function SuiteMapScene() {
+  return (
+    <Scene
+      id="suite"
+      eyebrow="Scene 04 / Suite Architecture"
+      title="One module inside an engineering intelligence system."
+      body="The portfolio is organized as a suite: IssueSense triages findings, EngiAgent performs workflow reasoning, and QAForge converts risks into test coverage."
+      className="suite-scene"
+    >
+      <div className="suite-map">
+        {suiteModules.map((module, index) => (
+          <div className={`suite-node ${index === 0 ? "primary" : ""}`} key={module.name}>
+            <span>{module.role}</span>
+            <strong>{module.name}</strong>
+            <p>{module.detail}</p>
+          </div>
+        ))}
+        <div className="suite-link link-a" />
+        <div className="suite-link link-b" />
+      </div>
+    </Scene>
+  );
+}
+
 function TrainingScene() {
   return (
     <Scene
       id="training"
-      eyebrow="Scene 04 / Model Training Chamber"
+      eyebrow="Scene 05 / Model Training Chamber"
       title="Models compete under controlled experiments."
       body="TF-IDF Logistic Regression is the baseline. PyTorch TextCNN is trained locally with CUDA and compared against held-out and challenge data."
       className="training-scene"
@@ -339,7 +386,7 @@ function EvaluationScene({ metricsData }) {
   return (
     <Scene
       id="evaluation"
-      eyebrow="Scene 05 / Evaluation Arena"
+      eyebrow="Scene 06 / Evaluation Arena"
       title="The confusion matrix becomes a holographic wall."
       body="Correct predictions glow blue. Misclassifications glow orange and become evidence for the next dataset iteration."
       className="evaluation-scene"
@@ -381,7 +428,7 @@ function DatasetAnalysisScene({ metricsData }) {
   return (
     <Scene
       id="analysis"
-      eyebrow="Scene 05B / Dataset Observatory"
+      eyebrow="Scene 06B / Dataset Observatory"
       title="The numbers are visible, not hidden."
       body="IssueSense separates synthetic training data from manual challenge evaluation, then exposes class balance, confusion patterns, and experiment runs."
       className="analysis-scene"
@@ -429,9 +476,9 @@ function ExplainScene({ result }) {
   return (
     <Scene
       id="explain"
-      eyebrow="Scene 06 / Explainable AI Network"
-      title="Predictions are grounded in similar cases."
-      body="The system retrieves nearest labeled issue examples so a prediction can be inspected instead of blindly trusted."
+      eyebrow="Scene 07 / Inspect Deeper"
+      title="Open the triage finding and inspect the cause."
+      body="A shallow label is not enough. The deeper view shows likely cause, evidence, uncertainty, and next investigation steps for the engineering workflow."
       className="explain-scene"
     >
       <Asset src="/assets/rag-network.svg" className="rag-network" alt="RAG-style evidence network" />
@@ -441,6 +488,20 @@ function ExplainScene({ result }) {
         <strong>
           Prediction: {result ? `${outputTitle(result)} (${displayLabel(result.label)})` : "Waiting for model output"}
         </strong>
+        {result?.triage && (
+          <div className="deep-inspection">
+            <div>
+              <span>LIKELY CAUSE</span>
+              <b>{result.triage.likely_cause}</b>
+            </div>
+            <p>{result.triage.cause_rationale}</p>
+            <ol>
+              {result.triage.next_investigation_steps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </div>
+        )}
         {result?.review_reasons?.length > 0 && (
           <div className="review-panel">
             {result.review_reasons.map((reason) => (
@@ -477,9 +538,9 @@ function FinalScene() {
         <Atom size={96} />
       </motion.div>
       <div className="final-copy">
-        <span className="system-chip">FUTURE ROADMAP</span>
+        <span className="system-chip">ENGINEERING INTELLIGENCE SUITE</span>
         <h2>Engineering Intelligence, Explained.</h2>
-        <p>More reviewed data. Better uncertainty handling. Stronger retrieval evidence. A clearer path from raw engineering reports to AI-assisted triage.</p>
+        <p>IssueSense ML is the triage engine. EngiAgent will turn findings into agentic investigation and 8D workflows. QAForge AI will convert confirmed risks into test coverage.</p>
         <a href="#top">Explore the Future of Engineering AI</a>
       </div>
     </section>
@@ -489,7 +550,7 @@ function FinalScene() {
 function NavRail() {
   return (
     <nav className="nav-rail" aria-label="Scene navigation">
-      {["top", "triage", "data", "core", "training", "evaluation", "analysis", "explain"].map((item) => (
+      {["top", "triage", "data", "core", "suite", "training", "evaluation", "analysis", "explain"].map((item) => (
         <a href={`#${item}`} key={item}>
           <Sparkles size={14} />
         </a>
@@ -569,6 +630,7 @@ export function App() {
       <TriageScene result={result} setResult={setResult} />
       <DataScene />
       <CoreScene result={result} />
+      <SuiteMapScene />
       <TrainingScene />
       <EvaluationScene metricsData={metricsData} />
       <DatasetAnalysisScene metricsData={metricsData} />
