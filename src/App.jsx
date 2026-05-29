@@ -199,17 +199,48 @@ function IntroScene() {
   );
 }
 
-function SuiteCommandCenter() {
+function SuiteCommandCenter({ suiteIssue, setSuiteIssue, suiteResult, setSuiteResult }) {
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+
+  async function runSuite() {
+    setStatus("running");
+    setError("");
+    try {
+      const data = await postJson("/suite/run", {
+        issue_text: suiteIssue,
+        model: "textcnn",
+      });
+      setSuiteResult(data);
+      setStatus("done");
+    } catch (exc) {
+      setStatus("error");
+      setError("Suite endpoint is unavailable. Start scripts\\run_api.ps1 and try again.");
+    }
+  }
+
   return (
     <section id="command" className="command-scene">
       <ParticleField count={90} />
       <div className="command-copy">
         <span className="eyebrow">Suite Command Center</span>
-        <h2>Three AI modules, one engineering workflow.</h2>
+        <h2>Generate an engineering resolution package.</h2>
         <p>
-          The suite behaves like a layered operations system: triage first, investigation second, QA validation third.
-          Each module exposes its own endpoint and shares context through the handoff workflow.
+          The system-level function is not just showing three demos. One issue enters the suite, then the umbrella
+          workflow produces triage, an 8D investigation draft, QA coverage, and a review-readiness score.
         </p>
+        <div className="suite-runner">
+          <div className="console-header">
+            <span>SUITE ENDPOINT</span>
+            <strong>{apiUrl}/suite/run</strong>
+          </div>
+          <textarea value={suiteIssue} onChange={(event) => setSuiteIssue(event.target.value)} />
+          <button className="classify-button" onClick={runSuite} disabled={status === "running"}>
+            {status === "running" ? <Cpu className="spin" size={18} /> : <Network size={18} />}
+            {status === "running" ? "Running Suite" : "Run Suite Workflow"}
+          </button>
+          {error && <div className="api-error">{error}</div>}
+        </div>
       </div>
       <div className="command-board">
         <div className="command-core">
@@ -226,15 +257,67 @@ function SuiteCommandCenter() {
           ))}
         </div>
         <div className="ops-grid">
-          {suiteStats.map((stat) => (
-            <div key={stat.label}>
-              <span>{stat.label}</span>
-              <b>{stat.value}</b>
-            </div>
-          ))}
+          {suiteResult ? (
+            <>
+              <div>
+                <span>Package</span>
+                <b>{suiteResult.status === "resolution_package_generated" ? "Ready" : "Pending"}</b>
+              </div>
+              <div>
+                <span>Triage</span>
+                <b>{displayLabel(suiteResult.resolution_package.triage.label)}</b>
+              </div>
+              <div>
+                <span>Readiness</span>
+                <b>{suiteResult.readiness.score}</b>
+              </div>
+              <div>
+                <span>Tests</span>
+                <b>{suiteResult.resolution_package.qa_plan.coverage.test_case_count}</b>
+              </div>
+            </>
+          ) : (
+            suiteStats.map((stat) => (
+              <div key={stat.label}>
+                <span>{stat.label}</span>
+                <b>{stat.value}</b>
+              </div>
+            ))
+          )}
         </div>
         <div className="pipeline-line" />
       </div>
+      {suiteResult && (
+        <div className="resolution-package">
+          <span className="output-kicker">ENGINEERING RESOLUTION PACKAGE</span>
+          <strong>{suiteResult.readiness.level.replaceAll("_", " ")}</strong>
+          <p>{suiteResult.system_function}</p>
+          <div className="workflow-trace-grid">
+            {suiteResult.workflow_trace.map((step) => (
+              <div key={step.module}>
+                <span>{step.module}</span>
+                <b>{step.output}</b>
+                <p>{step.action}</p>
+              </div>
+            ))}
+          </div>
+          <div className="package-summary-grid">
+            <div>
+              <span>Likely cause</span>
+              <b>{suiteResult.resolution_package.triage.triage.likely_cause}</b>
+            </div>
+            <div>
+              <span>8D runtime</span>
+              <b>{suiteResult.resolution_package.investigation.agent_runtime}</b>
+            </div>
+            <div>
+              <span>QA coverage</span>
+              <b>{suiteResult.resolution_package.qa_plan.coverage.coverage_percent}%</b>
+            </div>
+          </div>
+          <p>{suiteResult.recommended_next_action}</p>
+        </div>
+      )}
     </section>
   );
 }
@@ -854,6 +937,8 @@ export function App() {
   const [engiResult, setEngiResult] = useState(null);
   const [qaInput, setQaInput] = useState(defaultRequirement);
   const [qaResult, setQaResult] = useState(null);
+  const [suiteIssue, setSuiteIssue] = useState(samples[0]);
+  const [suiteResult, setSuiteResult] = useState(null);
 
   function sendToEngiAgent(issueText, triageResult) {
     const cause = triageResult?.triage?.likely_cause
@@ -939,7 +1024,12 @@ export function App() {
     <main id="top">
       <NavRail />
       <IntroScene />
-      <SuiteCommandCenter />
+      <SuiteCommandCenter
+        suiteIssue={suiteIssue}
+        setSuiteIssue={setSuiteIssue}
+        suiteResult={suiteResult}
+        setSuiteResult={setSuiteResult}
+      />
       <TriageScene
         result={result}
         setResult={setResult}

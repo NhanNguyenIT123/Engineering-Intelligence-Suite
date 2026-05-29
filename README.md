@@ -1,6 +1,6 @@
 # Engineering Intelligence Suite
 
-Engineering Intelligence Suite is an AI-assisted engineering workflow portfolio. It is organized as a set of connected modules that support issue triage, agentic investigation, and QA validation.
+Engineering Intelligence Suite is an AI-assisted engineering workflow portfolio. Its system-level function is to convert an engineering issue or test-report finding into an engineering resolution package: triage, likely cause, investigation draft, QA coverage, and human-review readiness.
 
 Implemented modules:
 
@@ -90,12 +90,15 @@ Available endpoints:
 GET  http://127.0.0.1:8765/health
 GET  http://127.0.0.1:8765/metrics
 GET  http://127.0.0.1:8765/suite/modules
+POST http://127.0.0.1:8765/suite/run
 POST http://127.0.0.1:8765/predict
 POST http://127.0.0.1:8765/engiagent/8d-draft
 POST http://127.0.0.1:8765/qaforge/generate-tests
 ```
 
-The prediction API returns `likely_cause`, `cause_rationale`, `next_investigation_steps`, and `suite_context`. The React demo includes `Send to EngiAgent` and `Send to QAForge` actions that carry the live triage context into investigation or QA validation scenes.
+`POST /suite/run` is the umbrella workflow endpoint. It runs IssueSense ML, EngiAgent, and QAForge AI in sequence and returns one `resolution_package`.
+
+The prediction API returns `likely_cause`, `cause_rationale`, `next_investigation_steps`, and `suite_context`. The React demo includes both the full suite workflow and module-level `Send to EngiAgent` / `Send to QAForge` actions.
 
 ## EngiAgent Runtime
 
@@ -192,7 +195,7 @@ See:
 
 Safe CV wording:
 
-- Built Engineering Intelligence Suite, an AI-assisted engineering workflow portfolio with triage, investigation, and QA validation modules.
+- Built Engineering Intelligence Suite, an AI-assisted engineering workflow system that converts engineering issue reports into triage, 8D investigation drafts, QA test plans, and review-readiness signals.
 - Built IssueSense ML, a PyTorch-based AI triage engine that classifies engineering issues, estimates likely cause, retrieves similar cases, and flags uncertain predictions for human review.
 - Added EngiAgent, an MVP investigation layer that converts triage findings into evidence summaries, tool traces, and 8D drafts for human review.
 - Added QAForge AI, an MVP QA validation layer that generates requirement-linked test cases, traceability rows, coverage metrics, and test artifact quality checks.

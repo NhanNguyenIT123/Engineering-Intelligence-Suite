@@ -2,6 +2,7 @@ import unittest
 
 from issuesense.engiagent import build_investigation_draft
 from issuesense.qaforge import generate_test_plan
+from issuesense.suite import run_suite_workflow
 
 
 class SuiteModuleTests(unittest.TestCase):
@@ -28,6 +29,18 @@ class SuiteModuleTests(unittest.TestCase):
         self.assertGreaterEqual(len(result["generated_cases"]), 5)
         self.assertEqual(result["coverage"]["coverage_percent"], 100.0)
         self.assertTrue(all(check["status"] == "pass" for check in result["quality_checks"]))
+
+    def test_suite_generates_resolution_package(self):
+        result = run_suite_workflow(
+            "The ERP connector sends customerId but the CRM endpoint now expects customer_id.",
+        )
+
+        self.assertEqual(result["suite"], "Engineering Intelligence Suite")
+        self.assertEqual(result["status"], "resolution_package_generated")
+        self.assertIn("triage", result["resolution_package"])
+        self.assertIn("investigation", result["resolution_package"])
+        self.assertIn("qa_plan", result["resolution_package"])
+        self.assertGreaterEqual(len(result["workflow_trace"]), 3)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from issuesense.paths import METRICS_PATH
 from issuesense.preprocessing import tokenize
 from issuesense.predict import predict_baseline, predict_textcnn
 from issuesense.qaforge import generate_test_plan
+from issuesense.suite import run_suite_workflow
 from issuesense.triage import build_triage_details
 import json
 
@@ -26,6 +27,12 @@ class EngiAgentRequest(BaseModel):
 class QAForgeRequest(BaseModel):
     requirement: str = Field(min_length=8, max_length=6000)
     triage: dict | None = None
+
+
+class SuiteRunRequest(BaseModel):
+    issue_text: str = Field(min_length=8, max_length=6000)
+    requirement: str | None = Field(default=None, max_length=6000)
+    model: str = "textcnn"
 
 
 app = FastAPI(title="IssueSense ML API", version="0.1.0")
@@ -73,6 +80,8 @@ def suite_modules():
                 "status": "mvp",
             },
         ],
+        "system_endpoint": "POST /suite/run",
+        "system_function": "Generate an engineering resolution package from one issue/test report.",
     }
 
 
@@ -127,6 +136,14 @@ def engiagent_8d_draft(request: EngiAgentRequest):
 @app.post("/qaforge/generate-tests")
 def qaforge_generate_tests(request: QAForgeRequest):
     return generate_test_plan(request.requirement, request.triage)
+
+
+@app.post("/suite/run")
+def suite_run(request: SuiteRunRequest):
+    try:
+        return run_suite_workflow(request.issue_text, request.requirement, request.model)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 def triage_status(confidence: float, token_count: int, evidence_matches: int) -> str:

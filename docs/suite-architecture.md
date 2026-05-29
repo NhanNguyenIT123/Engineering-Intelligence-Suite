@@ -1,12 +1,18 @@
 # Engineering Intelligence Suite Architecture
 
-The portfolio is organized as a suite, not as unrelated apps.
+The portfolio is organized as a suite, not as unrelated apps. The system-level function is to convert an engineering issue or test-report finding into a reviewable engineering resolution package.
 
 ```text
 Engineering issue / test finding / validation failure
         |
         v
 Issue Intake
+        |
+        v
+Engineering Intelligence Suite
+  - run full workflow
+  - coordinate module outputs
+  - return resolution package
         |
         v
 IssueSense ML
@@ -27,6 +33,25 @@ EngiAgent                                      QAForge AI
 ```
 
 ## Implemented Modules
+
+### Engineering Intelligence Suite
+
+Umbrella workflow that coordinates the child modules.
+
+Implemented capability:
+
+- accepts one issue/test-report finding
+- runs issue triage
+- generates an 8D investigation draft
+- generates a QA validation plan
+- calculates review-readiness
+- returns one engineering resolution package
+
+Endpoint:
+
+```text
+POST /suite/run
+```
 
 ### IssueSense ML
 
