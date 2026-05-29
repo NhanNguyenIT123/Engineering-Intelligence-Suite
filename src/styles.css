@@ -521,6 +521,35 @@ a {
   color: #ffbd75;
 }
 
+.handoff-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.handoff-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid rgba(141, 239, 255, 0.24);
+  border-radius: 999px;
+  color: #dffbff;
+  background: rgba(5, 18, 32, 0.72);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.handoff-actions button:hover {
+  color: #ffbd75;
+  border-color: rgba(255, 157, 46, 0.55);
+  transform: translateY(-2px);
+}
+
 .stream {
   position: absolute;
   right: -8vw;
@@ -712,6 +741,171 @@ a {
 .link-b {
   left: 61%;
   animation-delay: -1.2s;
+}
+
+.module-scene {
+  min-height: 124vh;
+}
+
+.module-console,
+.module-output {
+  position: relative;
+  z-index: 7;
+  border: 1px solid rgba(121, 220, 255, 0.24);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(8, 24, 39, 0.86), rgba(6, 17, 31, 0.55)),
+    radial-gradient(circle at 20% 0%, rgba(53, 217, 255, 0.18), transparent 34%);
+  box-shadow: inset 0 0 34px rgba(53, 217, 255, 0.06), 0 26px 72px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(18px);
+}
+
+.module-console {
+  display: grid;
+  gap: 16px;
+  width: min(720px, 62vw);
+  padding: 22px;
+}
+
+.module-console textarea {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  padding: 18px;
+  border: 1px solid rgba(141, 239, 255, 0.22);
+  border-radius: 20px;
+  outline: none;
+  color: #e8f7ff;
+  background: rgba(2, 8, 18, 0.68);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.22);
+  font: 600 14px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.module-output {
+  position: absolute;
+  right: 6vw;
+  bottom: 7vh;
+  display: grid;
+  gap: 14px;
+  width: min(680px, 56vw);
+  max-height: 78vh;
+  overflow: auto;
+  padding: 24px;
+}
+
+.module-output strong {
+  color: #f8fcff;
+  font-size: clamp(28px, 4vw, 52px);
+  line-height: 1;
+}
+
+.module-output p {
+  margin: 0;
+  color: #b8c8d8;
+  line-height: 1.5;
+}
+
+.module-output::-webkit-scrollbar {
+  width: 8px;
+}
+
+.module-output::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(141, 239, 255, 0.28);
+}
+
+.eight-d-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.eight-d-grid div,
+.trace-strip div,
+.qa-case-grid div,
+.coverage-grid div {
+  border: 1px solid rgba(141, 239, 255, 0.16);
+  border-radius: 16px;
+  background: rgba(2, 8, 18, 0.42);
+}
+
+.eight-d-grid div {
+  padding: 12px;
+}
+
+.eight-d-grid span,
+.qa-case-grid span,
+.coverage-grid span {
+  display: block;
+  color: #8defff;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.eight-d-grid p,
+.qa-case-grid p {
+  margin-top: 6px;
+  color: #c9d8e4;
+  font-size: 12px;
+}
+
+.trace-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.trace-strip div {
+  padding: 12px;
+}
+
+.trace-strip b {
+  display: block;
+  color: #ffbd75;
+  font-size: 12px;
+}
+
+.trace-strip span {
+  display: block;
+  margin-top: 5px;
+  color: #9fb6c8;
+  font-size: 12px;
+}
+
+.coverage-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.coverage-grid div {
+  padding: 14px;
+}
+
+.coverage-grid b {
+  display: block;
+  margin-top: 6px;
+  color: #ffbd75;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.qa-case-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.qa-case-grid div {
+  padding: 13px;
+}
+
+.qa-case-grid b {
+  display: block;
+  margin-top: 6px;
+  color: #f8fcff;
+  font-size: 14px;
 }
 
 .engine-row {
@@ -1325,7 +1519,9 @@ a {
   .metric-constellation,
   .reasoning-panel,
   .triage-console,
-  .live-output {
+  .live-output,
+  .module-console,
+  .module-output {
     position: relative;
     right: auto;
     top: auto;
@@ -1339,7 +1535,11 @@ a {
   .metric-constellation,
   .analysis-lab,
   .experiment-strip,
-  .suite-map {
+  .suite-map,
+  .eight-d-grid,
+  .trace-strip,
+  .coverage-grid,
+  .qa-case-grid {
     grid-template-columns: 1fr;
     width: 100%;
   }

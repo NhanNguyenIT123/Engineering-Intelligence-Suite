@@ -16,31 +16,78 @@ IssueSense ML
   - uncertainty / human-review flag
   - next investigation steps
         |
-        +----------------------+
-        |                      |
-        v                      v
-EngiAgent                  QAForge AI
-  - evidence RAG             - requirement-to-test mapping
-  - tool routing             - test case generation
-  - session memory           - edge-case discovery
-  - 8D draft support         - QA artifact validation
+        +----------------------+----------------------+
+        |                                             |
+        v                                             v
+EngiAgent                                      QAForge AI
+  - evidence extraction                          - requirement-to-test mapping
+  - investigation summary                        - test case generation
+  - tool trace                                   - edge-case discovery
+  - 8D draft support                            - QA artifact validation
 ```
 
-## Implemented Now
+## Implemented Modules
 
-`IssueSense ML` is implemented as the first module.
+### IssueSense ML
 
-It is intentionally not positioned as a final enterprise app. It is an AI triage engine that produces structured signals for deeper engineering workflows.
+AI triage engine for engineering issue classification and root-cause inspection.
 
-## Planned Next Modules
+Implemented capabilities:
+
+- predicts issue category
+- estimates likely cause
+- retrieves similar labeled cases
+- flags uncertainty for human review
+- returns next investigation steps
 
 ### EngiAgent
 
-Agentic workflow layer for engineering problem solving and 8D assistance.
+MVP investigation workflow layer for engineering problem solving and 8D assistance.
+
+Implemented capabilities:
+
+- accepts raw report text and optional IssueSense triage context
+- extracts evidence snippets
+- generates investigation summary
+- drafts D1-D8 fields
+- returns a simple tool trace and memory notes
+
+Endpoint:
+
+```text
+POST /engiagent/8d-draft
+```
 
 ### QAForge AI
 
-AI-assisted QA validation layer for requirement-to-test coverage.
+MVP AI-assisted QA validation layer for requirement-to-test coverage.
+
+Implemented capabilities:
+
+- accepts requirement text and optional IssueSense triage context
+- generates functional, negative, edge, regression, and risk-specific test cases
+- builds requirement-to-test traceability rows
+- reports coverage metrics
+- validates missing expected results, duplicates, weak assertions, and coverage gaps
+
+Endpoint:
+
+```text
+POST /qaforge/generate-tests
+```
+
+## Workflow
+
+```mermaid
+flowchart LR
+  A["Raw issue or test report"] --> B["IssueSense ML"]
+  B --> C["Class + confidence"]
+  B --> D["Likely cause + evidence"]
+  D --> E["EngiAgent 8D draft"]
+  D --> F["QAForge test plan"]
+  E --> G["Human engineering review"]
+  F --> G
+```
 
 ## Why This Positioning Matters
 

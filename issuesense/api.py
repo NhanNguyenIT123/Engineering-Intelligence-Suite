@@ -2,11 +2,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from issuesense.engiagent import build_investigation_draft
 from issuesense.explain import build_explanation
 from issuesense.experiment_tracking import load_runs
 from issuesense.paths import METRICS_PATH
 from issuesense.preprocessing import tokenize
 from issuesense.predict import predict_baseline, predict_textcnn
+from issuesense.qaforge import generate_test_plan
 from issuesense.triage import build_triage_details
 import json
 
@@ -14,6 +16,16 @@ import json
 class PredictRequest(BaseModel):
     text: str = Field(min_length=8, max_length=4000)
     model: str = "textcnn"
+
+
+class EngiAgentRequest(BaseModel):
+    text: str = Field(min_length=8, max_length=6000)
+    triage: dict | None = None
+
+
+class QAForgeRequest(BaseModel):
+    requirement: str = Field(min_length=8, max_length=6000)
+    triage: dict | None = None
 
 
 app = FastAPI(title="IssueSense ML API", version="0.1.0")
@@ -35,6 +47,33 @@ app.add_middleware(
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/suite/modules")
+def suite_modules():
+    return {
+        "suite": "Engineering Intelligence Suite",
+        "modules": [
+            {
+                "name": "IssueSense ML",
+                "role": "AI triage engine",
+                "endpoint": "POST /predict",
+                "status": "implemented",
+            },
+            {
+                "name": "EngiAgent",
+                "role": "Agentic investigation and 8D draft layer",
+                "endpoint": "POST /engiagent/8d-draft",
+                "status": "mvp",
+            },
+            {
+                "name": "QAForge AI",
+                "role": "Requirement-to-test coverage and QA validation layer",
+                "endpoint": "POST /qaforge/generate-tests",
+                "status": "mvp",
+            },
+        ],
+    }
 
 
 @app.get("/metrics")
@@ -74,9 +113,20 @@ def predict(request: PredictRequest):
             prediction["status"],
             evidence_matches,
         )
+        prediction["triage"]["predicted_label"] = prediction["label"]
         return prediction
     except FileNotFoundError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/engiagent/8d-draft")
+def engiagent_8d_draft(request: EngiAgentRequest):
+    return build_investigation_draft(request.text, request.triage)
+
+
+@app.post("/qaforge/generate-tests")
+def qaforge_generate_tests(request: QAForgeRequest):
+    return generate_test_plan(request.requirement, request.triage)
 
 
 def triage_status(confidence: float, token_count: int, evidence_matches: int) -> str:

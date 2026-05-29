@@ -1,5 +1,19 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Activity, Atom, BrainCircuit, Cpu, DatabaseZap, Gauge, Network, Play, Radar, Send, Sparkles } from "lucide-react";
+import {
+  Activity,
+  Atom,
+  BrainCircuit,
+  ClipboardCheck,
+  Cpu,
+  DatabaseZap,
+  FileSearch,
+  Gauge,
+  Network,
+  Play,
+  Radar,
+  Send,
+  Sparkles,
+} from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -25,6 +39,8 @@ const metrics = [
 const apiUrl = "http://127.0.0.1:8765";
 const defaultIssue =
   "During regression testing, the login API returns HTTP 500 only when the password contains special characters. The expected behavior is HTTP 401 for invalid credentials.";
+const defaultRequirement =
+  "The CRM connector must map customerId to customer_id, reject malformed payloads, and keep workflow status synchronized across ERP and CRM services.";
 
 const samples = [
   "The ERP connector sends customerId but the CRM endpoint now expects customer_id.",
@@ -58,6 +74,19 @@ function displayLabel(label) {
 
 function isNeedsReview(result) {
   return result?.status === "needs_review";
+}
+
+async function postJson(path, payload) {
+  const response = await fetch(`${apiUrl}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail);
+  }
+  return response.json();
 }
 
 function outputTitle(result) {
@@ -164,7 +193,7 @@ function DataScene() {
   );
 }
 
-function TriageScene({ result, setResult }) {
+function TriageScene({ result, setResult, onSendToEngiAgent, onSendToQAForge }) {
   const [text, setText] = useState(defaultIssue);
   const [model, setModel] = useState("textcnn");
   const [status, setStatus] = useState("idle");
@@ -174,16 +203,7 @@ function TriageScene({ result, setResult }) {
     setStatus("running");
     setError("");
     try {
-      const response = await fetch(`${apiUrl}/predict`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, model }),
-      });
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(detail);
-      }
-      const data = await response.json();
+      const data = await postJson("/predict", { text, model });
       setResult({ ...data, query: text });
       setStatus("done");
       document.getElementById("core")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -262,6 +282,16 @@ function TriageScene({ result, setResult }) {
                 Likely cause: <b>{result.triage.likely_cause}</b>
               </div>
             )}
+            <div className="handoff-actions">
+              <button onClick={() => onSendToEngiAgent(text, result)}>
+                <FileSearch size={16} />
+                Send to EngiAgent
+              </button>
+              <button onClick={() => onSendToQAForge(text, result)}>
+                <ClipboardCheck size={16} />
+                Send to QAForge
+              </button>
+            </div>
             {result.review_reasons?.length > 0 && (
               <ul className="review-reasons">
                 {result.review_reasons.map((reason) => (
@@ -333,11 +363,172 @@ function SuiteMapScene() {
   );
 }
 
+function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+
+  async function generateDraft() {
+    setStatus("running");
+    setError("");
+    try {
+      const data = await postJson("/engiagent/8d-draft", {
+        text: input,
+        triage: triageResult?.triage
+          ? { ...triageResult.triage, predicted_label: triageResult.label }
+          : null,
+      });
+      setResult(data);
+      setStatus("done");
+    } catch (exc) {
+      setStatus("error");
+      setError("EngiAgent endpoint is unavailable. Start scripts\\run_api.ps1 and try again.");
+    }
+  }
+
+  const dEntries = result ? Object.entries(result.eight_d) : [];
+
+  return (
+    <Scene
+      id="engiagent"
+      eyebrow="Scene 05 / EngiAgent Investigation"
+      title="Turn triage into an 8D investigation draft."
+      body="EngiAgent is the workflow layer. It reads the issue context, extracts evidence, builds an investigation summary, and drafts D1-D8 actions for human review."
+      className="module-scene engiagent-scene"
+    >
+      <div className="module-console">
+        <div className="console-header">
+          <span>ENGIAGENT ENDPOINT</span>
+          <strong>{apiUrl}/engiagent/8d-draft</strong>
+        </div>
+        <textarea value={input} onChange={(event) => setInput(event.target.value)} />
+        <button className="classify-button" onClick={generateDraft} disabled={status === "running"}>
+          {status === "running" ? <Cpu className="spin" size={18} /> : <FileSearch size={18} />}
+          {status === "running" ? "Drafting" : "Generate 8D Draft"}
+        </button>
+        {error && <div className="api-error">{error}</div>}
+      </div>
+      <div className="module-output engiagent-output">
+        <span className="output-kicker">AGENT OUTPUT</span>
+        {result ? (
+          <>
+            <strong>8D Draft Ready</strong>
+            <p>{result.investigation_summary}</p>
+            <div className="eight-d-grid">
+              {dEntries.map(([key, value]) => (
+                <div key={key}>
+                  <span>{key.replaceAll("_", " ")}</span>
+                  <p>{value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="trace-strip">
+              {result.tool_trace.map((trace) => (
+                <div key={trace.tool}>
+                  <b>{trace.tool}</b>
+                  <span>{trace.result}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <strong>Waiting for issue context</strong>
+            <p>Use the button in IssueSense output or paste a report here to produce an investigation draft.</p>
+          </>
+        )}
+      </div>
+    </Scene>
+  );
+}
+
+function QAForgeScene({ input, setInput, triageResult, result, setResult }) {
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+
+  async function generateTests() {
+    setStatus("running");
+    setError("");
+    try {
+      const data = await postJson("/qaforge/generate-tests", {
+        requirement: input,
+        triage: triageResult?.triage
+          ? { ...triageResult.triage, predicted_label: triageResult.label }
+          : null,
+      });
+      setResult(data);
+      setStatus("done");
+    } catch (exc) {
+      setStatus("error");
+      setError("QAForge endpoint is unavailable. Start scripts\\run_api.ps1 and try again.");
+    }
+  }
+
+  return (
+    <Scene
+      id="qaforge"
+      eyebrow="Scene 06 / QAForge Validation"
+      title="Convert engineering risk into test coverage."
+      body="QAForge AI turns requirements or confirmed triage risks into manual test cases, traceability rows, and quality checks for weak or incomplete QA artifacts."
+      className="module-scene qaforge-scene"
+    >
+      <div className="module-console">
+        <div className="console-header">
+          <span>QAFORGE ENDPOINT</span>
+          <strong>{apiUrl}/qaforge/generate-tests</strong>
+        </div>
+        <textarea value={input} onChange={(event) => setInput(event.target.value)} />
+        <button className="classify-button" onClick={generateTests} disabled={status === "running"}>
+          {status === "running" ? <Cpu className="spin" size={18} /> : <ClipboardCheck size={18} />}
+          {status === "running" ? "Generating" : "Generate Test Plan"}
+        </button>
+        {error && <div className="api-error">{error}</div>}
+      </div>
+      <div className="module-output qaforge-output">
+        <span className="output-kicker">QA OUTPUT</span>
+        {result ? (
+          <>
+            <strong>{result.coverage.coverage_percent}% coverage</strong>
+            <p>{result.requirement_summary}</p>
+            <div className="coverage-grid">
+              <div>
+                <span>Test cases</span>
+                <b>{result.coverage.test_case_count}</b>
+              </div>
+              <div>
+                <span>Fragments covered</span>
+                <b>{result.coverage.covered_fragments}/{result.coverage.requirement_fragments}</b>
+              </div>
+              <div>
+                <span>Checks passed</span>
+                <b>{result.quality_checks.filter((check) => check.status === "pass").length}/{result.quality_checks.length}</b>
+              </div>
+            </div>
+            <div className="qa-case-grid">
+              {result.generated_cases.slice(0, 4).map((testCase) => (
+                <div key={testCase.id}>
+                  <span>{testCase.id} - {testCase.type}</span>
+                  <b>{testCase.title}</b>
+                  <p>{testCase.expected_result}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <strong>Waiting for requirement</strong>
+            <p>Send a triage finding or enter a requirement to generate traceable QA artifacts.</p>
+          </>
+        )}
+      </div>
+    </Scene>
+  );
+}
+
 function TrainingScene() {
   return (
     <Scene
       id="training"
-      eyebrow="Scene 05 / Model Training Chamber"
+      eyebrow="Scene 07 / Model Training Chamber"
       title="Models compete under controlled experiments."
       body="TF-IDF Logistic Regression is the baseline. PyTorch TextCNN is trained locally with CUDA and compared against held-out and challenge data."
       className="training-scene"
@@ -386,7 +577,7 @@ function EvaluationScene({ metricsData }) {
   return (
     <Scene
       id="evaluation"
-      eyebrow="Scene 06 / Evaluation Arena"
+      eyebrow="Scene 08 / Evaluation Arena"
       title="The confusion matrix becomes a holographic wall."
       body="Correct predictions glow blue. Misclassifications glow orange and become evidence for the next dataset iteration."
       className="evaluation-scene"
@@ -428,7 +619,7 @@ function DatasetAnalysisScene({ metricsData }) {
   return (
     <Scene
       id="analysis"
-      eyebrow="Scene 06B / Dataset Observatory"
+      eyebrow="Scene 08B / Dataset Observatory"
       title="The numbers are visible, not hidden."
       body="IssueSense separates synthetic training data from manual challenge evaluation, then exposes class balance, confusion patterns, and experiment runs."
       className="analysis-scene"
@@ -476,7 +667,7 @@ function ExplainScene({ result }) {
   return (
     <Scene
       id="explain"
-      eyebrow="Scene 07 / Inspect Deeper"
+      eyebrow="Scene 09 / Inspect Deeper"
       title="Open the triage finding and inspect the cause."
       body="A shallow label is not enough. The deeper view shows likely cause, evidence, uncertainty, and next investigation steps for the engineering workflow."
       className="explain-scene"
@@ -540,7 +731,7 @@ function FinalScene() {
       <div className="final-copy">
         <span className="system-chip">ENGINEERING INTELLIGENCE SUITE</span>
         <h2>Engineering Intelligence, Explained.</h2>
-        <p>IssueSense ML is the triage engine. EngiAgent will turn findings into agentic investigation and 8D workflows. QAForge AI will convert confirmed risks into test coverage.</p>
+        <p>IssueSense ML classifies the issue. EngiAgent expands it into an investigation and 8D draft. QAForge AI converts the risk into requirement-linked test coverage.</p>
         <a href="#top">Explore the Future of Engineering AI</a>
       </div>
     </section>
@@ -550,7 +741,7 @@ function FinalScene() {
 function NavRail() {
   return (
     <nav className="nav-rail" aria-label="Scene navigation">
-      {["top", "triage", "data", "core", "suite", "training", "evaluation", "analysis", "explain"].map((item) => (
+      {["top", "triage", "data", "core", "suite", "engiagent", "qaforge", "training", "evaluation", "analysis", "explain"].map((item) => (
         <a href={`#${item}`} key={item}>
           <Sparkles size={14} />
         </a>
@@ -562,6 +753,30 @@ function NavRail() {
 export function App() {
   const [result, setResult] = useState(null);
   const [metricsData, setMetricsData] = useState(null);
+  const [engiInput, setEngiInput] = useState(defaultIssue);
+  const [engiResult, setEngiResult] = useState(null);
+  const [qaInput, setQaInput] = useState(defaultRequirement);
+  const [qaResult, setQaResult] = useState(null);
+
+  function sendToEngiAgent(issueText, triageResult) {
+    const cause = triageResult?.triage?.likely_cause
+      ? `\n\nLikely cause from IssueSense: ${triageResult.triage.likely_cause}`
+      : "";
+    setEngiInput(`${issueText}${cause}`);
+    document.getElementById("engiagent")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function sendToQAForge(issueText, triageResult) {
+    const label = triageResult?.label ? displayLabel(triageResult.label) : "Engineering Risk";
+    const cause = triageResult?.triage?.likely_cause ?? "reported engineering issue";
+    setQaInput(
+      `Requirement: the system must handle the scenario without recurring ${label.toLowerCase()}.\n` +
+        `Risk context: ${issueText}\n` +
+        `Likely cause: ${cause}.\n` +
+        "Generate tests for expected behavior, invalid input, edge cases, regression, and integration impact."
+    );
+    document.getElementById("qaforge")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   useEffect(() => {
     fetch(`${apiUrl}/metrics`)
@@ -627,10 +842,29 @@ export function App() {
     <main id="top">
       <NavRail />
       <IntroScene />
-      <TriageScene result={result} setResult={setResult} />
+      <TriageScene
+        result={result}
+        setResult={setResult}
+        onSendToEngiAgent={sendToEngiAgent}
+        onSendToQAForge={sendToQAForge}
+      />
       <DataScene />
       <CoreScene result={result} />
       <SuiteMapScene />
+      <EngiAgentScene
+        input={engiInput}
+        setInput={setEngiInput}
+        triageResult={result}
+        result={engiResult}
+        setResult={setEngiResult}
+      />
+      <QAForgeScene
+        input={qaInput}
+        setInput={setQaInput}
+        triageResult={result}
+        result={qaResult}
+        setResult={setQaResult}
+      />
       <TrainingScene />
       <EvaluationScene metricsData={metricsData} />
       <DatasetAnalysisScene metricsData={metricsData} />
