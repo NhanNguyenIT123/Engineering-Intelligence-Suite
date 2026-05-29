@@ -1,4 +1,5 @@
 import argparse
+from functools import lru_cache
 import json
 import time
 
@@ -13,10 +14,28 @@ from issuesense.textcnn import TextCNN
 from issuesense.torch_data import encode_text
 
 
-def predict_baseline(text: str) -> dict:
+@lru_cache(maxsize=1)
+def load_baseline_model():
     if not BASELINE_MODEL_PATH.exists():
         raise FileNotFoundError("Baseline model missing. Run: python -m issuesense.train_baseline")
-    model = joblib.load(BASELINE_MODEL_PATH)
+    return joblib.load(BASELINE_MODEL_PATH)
+
+
+@lru_cache(maxsize=1)
+def load_textcnn_model():
+    if not TEXTCNN_MODEL_PATH.exists():
+        raise FileNotFoundError("PyTorch model missing. Run: python -m issuesense.train_pytorch")
+    checkpoint = torch.load(TEXTCNN_MODEL_PATH, map_location="cpu")
+    vocab = checkpoint["vocab"]
+    max_length = checkpoint["max_length"]
+    model = TextCNN(vocab_size=len(vocab), num_classes=len(LABELS))
+    model.load_state_dict(checkpoint["model_state"])
+    model.eval()
+    return model, vocab, max_length
+
+
+def predict_baseline(text: str) -> dict:
+    model = load_baseline_model()
     started = time.perf_counter()
     probabilities = model.predict_proba([normalize_text(text)])[0]
     label_id = int(probabilities.argmax())
@@ -29,14 +48,7 @@ def predict_baseline(text: str) -> dict:
 
 
 def predict_textcnn(text: str) -> dict:
-    if not TEXTCNN_MODEL_PATH.exists():
-        raise FileNotFoundError("PyTorch model missing. Run: python -m issuesense.train_pytorch")
-    checkpoint = torch.load(TEXTCNN_MODEL_PATH, map_location="cpu")
-    vocab = checkpoint["vocab"]
-    max_length = checkpoint["max_length"]
-    model = TextCNN(vocab_size=len(vocab), num_classes=len(LABELS))
-    model.load_state_dict(checkpoint["model_state"])
-    model.eval()
+    model, vocab, max_length = load_textcnn_model()
 
     input_ids = torch.tensor([encode_text(text, vocab, max_length)], dtype=torch.long)
     started = time.perf_counter()

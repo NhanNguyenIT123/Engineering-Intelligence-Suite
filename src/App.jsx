@@ -1,12 +1,19 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { Activity, Atom, BrainCircuit, DatabaseZap, Gauge, Network, Radar, Sparkles } from "lucide-react";
+import { Activity, Atom, BrainCircuit, Cpu, DatabaseZap, Gauge, Network, Play, Radar, Send, Sparkles } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const categories = ["Software Defect", "Requirement Gap", "Test Environment", "Data Issue", "Performance Issue"];
+const categories = [
+  { label: "Software Defect", value: "software_bug" },
+  { label: "Requirement Gap", value: "requirement_gap" },
+  { label: "Test Environment", value: "test_environment_issue" },
+  { label: "Data Issue", value: "data_issue" },
+  { label: "Performance Issue", value: "performance_issue" },
+  { label: "Integration Issue", value: "integration_issue" },
+];
 
 const metrics = [
   { label: "Synthetic Test F1", value: "1.000" },
@@ -14,6 +21,22 @@ const metrics = [
   { label: "Manual Challenge", value: "36" },
   { label: "Training Reports", value: "540" },
 ];
+
+const apiUrl = "http://127.0.0.1:8765";
+const defaultIssue =
+  "During regression testing, the login API returns HTTP 500 only when the password contains special characters. The expected behavior is HTTP 401 for invalid credentials.";
+
+const samples = [
+  "The ERP connector sends customerId but the CRM endpoint now expects customer_id.",
+  "Search response time increased from 300ms to 4.8s after importing 100k records.",
+  "Test passes locally but fails on staging because the payment sandbox endpoint is unreachable.",
+  "The specification does not mention what should happen when the user cancels payment after OTP verification.",
+];
+
+function displayLabel(label) {
+  const match = categories.find((category) => category.value === label);
+  return match?.label ?? label?.replaceAll("_", " ");
+}
 
 function ParticleField({ count = 90 }) {
   const particles = useMemo(
@@ -112,7 +135,97 @@ function DataScene() {
   );
 }
 
-function CoreScene() {
+function TriageScene({ result, setResult }) {
+  const [text, setText] = useState(defaultIssue);
+  const [model, setModel] = useState("textcnn");
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+
+  async function classify() {
+    setStatus("running");
+    setError("");
+    try {
+      const response = await fetch(`${apiUrl}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, model }),
+      });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(detail);
+      }
+      const data = await response.json();
+      setResult({ ...data, query: text });
+      setStatus("done");
+      document.getElementById("core")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (exc) {
+      setStatus("error");
+      setError("API is not running. Start it with scripts\\run_api.ps1, then classify again.");
+    }
+  }
+
+  return (
+    <Scene
+      id="triage"
+      eyebrow="Live System / Triage Console"
+      title="Inject an issue into the machine."
+      body="Paste an engineering issue or test-report finding. The cinematic layer calls the local Python model, then carries the prediction into the core and explanation scenes."
+      className="triage-scene"
+    >
+      <div className="triage-console">
+        <div className="console-header">
+          <span>LOCAL MODEL ENDPOINT</span>
+          <strong>{apiUrl}/predict</strong>
+        </div>
+        <textarea value={text} onChange={(event) => setText(event.target.value)} />
+        <div className="console-actions">
+          <div className="model-toggle">
+            <button className={model === "textcnn" ? "active" : ""} onClick={() => setModel("textcnn")}>
+              PyTorch TextCNN
+            </button>
+            <button className={model === "baseline" ? "active" : ""} onClick={() => setModel("baseline")}>
+              TF-IDF Baseline
+            </button>
+          </div>
+          <button className="classify-button" onClick={classify} disabled={status === "running"}>
+            {status === "running" ? <Cpu className="spin" size={18} /> : <Send size={18} />}
+            {status === "running" ? "Classifying" : "Classify Issue"}
+          </button>
+        </div>
+        <div className="sample-row">
+          {samples.map((sample) => (
+            <button key={sample} onClick={() => setText(sample)}>
+              <Play size={13} />
+              sample
+            </button>
+          ))}
+        </div>
+        {error && <div className="api-error">{error}</div>}
+      </div>
+      <div className={`live-output ${result ? "has-result" : ""}`}>
+        <span className="output-kicker">MODEL OUTPUT</span>
+        {result ? (
+          <>
+            <strong>{displayLabel(result.label)}</strong>
+            <div className="confidence-ring">
+              <span>{Math.round(result.confidence * 100)}%</span>
+              confidence
+            </div>
+            <p>{result.explanation?.reason}</p>
+            <small>{result.model} · {result.latency_ms?.toFixed(2)} ms</small>
+          </>
+        ) : (
+          <>
+            <strong>Awaiting issue packet</strong>
+            <p>The next prediction will illuminate the classification core and evidence network.</p>
+          </>
+        )}
+      </div>
+    </Scene>
+  );
+}
+
+function CoreScene({ result }) {
   return (
     <Scene
       id="core"
@@ -125,13 +238,13 @@ function CoreScene() {
       <div className="category-orbit">
         {categories.map((category, index) => (
           <motion.div
-            className="category"
-            key={category}
+            className={`category ${result?.label === category.value ? "active-category" : ""}`}
+            key={category.value}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.12, duration: 0.55 }}
           >
-            {category}
+            {category.label}
           </motion.div>
         ))}
       </div>
@@ -191,7 +304,8 @@ function EvaluationScene() {
   );
 }
 
-function ExplainScene() {
+function ExplainScene({ result }) {
+  const examples = result?.explanation?.similar_examples ?? [];
   return (
     <Scene
       id="explain"
@@ -203,8 +317,18 @@ function ExplainScene() {
       <Asset src="/assets/rag-network.svg" className="rag-network" alt="RAG-style evidence network" />
       <div className="reasoning-panel">
         <span>QUERY</span>
-        <p>The ERP connector sends customerId but the CRM endpoint expects customer_id.</p>
-        <strong>Prediction: Integration Issue</strong>
+        <p>{result?.query ?? "Classify an issue in the triage console to send a live query into this network."}</p>
+        <strong>Prediction: {result ? displayLabel(result.label) : "Waiting for model output"}</strong>
+        {examples.length > 0 && (
+          <div className="evidence-stack">
+            {examples.slice(0, 3).map((example) => (
+              <div className="evidence-chip" key={example.id}>
+                <b>{example.id}</b>
+                <span>{displayLabel(example.label)} · {example.similarity.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </Scene>
   );
@@ -236,7 +360,7 @@ function FinalScene() {
 function NavRail() {
   return (
     <nav className="nav-rail" aria-label="Scene navigation">
-      {["top", "data", "core", "training", "evaluation", "explain"].map((item) => (
+      {["top", "triage", "data", "core", "training", "evaluation", "explain"].map((item) => (
         <a href={`#${item}`} key={item}>
           <Sparkles size={14} />
         </a>
@@ -246,6 +370,8 @@ function NavRail() {
 }
 
 export function App() {
+  const [result, setResult] = useState(null);
+
   useEffect(() => {
     const animated = gsap.utils.toArray(".scene, .final-scene");
     animated.forEach((section) => {
@@ -301,11 +427,12 @@ export function App() {
     <main id="top">
       <NavRail />
       <IntroScene />
+      <TriageScene result={result} setResult={setResult} />
       <DataScene />
-      <CoreScene />
+      <CoreScene result={result} />
       <TrainingScene />
       <EvaluationScene />
-      <ExplainScene />
+      <ExplainScene result={result} />
       <FinalScene />
       <div className="ambient-glow ambient-a" />
       <div className="ambient-glow ambient-b" />

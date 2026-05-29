@@ -83,7 +83,15 @@ Or:
 
 ## Cinematic Web Experience
 
-The repository also includes a React/Vite cinematic product experience for portfolio presentation. It is intentionally visual-first: animated engineering city, report streams, AI core, training chamber, evaluation arena, and explainable-AI network.
+The repository also includes a React/Vite cinematic product experience for portfolio presentation. It is visual-first, but it is connected to the Python model through a local FastAPI endpoint. The live triage console sends issue text to the local classifier and carries the prediction into the AI core and explanation scenes.
+
+Start the Python prediction API:
+
+```powershell
+.\scripts\run_api.ps1
+```
+
+Then start the cinematic web experience:
 
 ```powershell
 npm.cmd install
@@ -102,7 +110,7 @@ Build check:
 npm.cmd run build
 ```
 
-Important: the cinematic React site is a storytelling/demo layer. The real ML pipeline is the Python code under `issuesense/`, and the measured results are documented in `docs/metrics.md`.
+Important: the cinematic React site is the storytelling/demo layer. The real prediction is served by the Python code under `issuesense/`, and the measured results are documented in `docs/metrics.md`.
 
 ## Current Results
 
