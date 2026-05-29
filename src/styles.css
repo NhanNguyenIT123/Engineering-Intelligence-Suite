@@ -1760,33 +1760,59 @@ a {
   animation: ambientDrift 18s ease-in-out infinite alternate-reverse;
 }
 
-.nav-rail {
+.suite-nav {
   position: fixed;
-  top: 50%;
-  right: 22px;
+  top: 18px;
+  left: 50%;
   z-index: 30;
-  display: grid;
-  gap: 12px;
-  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: min(1040px, calc(100% - 36px));
+  padding: 10px 12px 10px 16px;
+  border: 1px solid rgba(141, 239, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(3, 10, 20, 0.58);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28), inset 0 0 24px rgba(53, 217, 255, 0.05);
+  backdrop-filter: blur(16px);
+  transform: translateX(-50%);
 }
 
-.nav-rail a {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
+.suite-nav div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.suite-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 12px;
   border: 1px solid rgba(141, 239, 255, 0.24);
-  border-radius: 50%;
+  border-radius: 999px;
   color: #8defff;
   background: rgba(3, 10, 20, 0.5);
-  backdrop-filter: blur(10px);
+  font-size: 12px;
+  font-weight: 900;
   transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
-.nav-rail a:hover {
+.suite-nav a:hover {
   color: #ffbd75;
   border-color: rgba(255, 157, 46, 0.55);
-  transform: scale(1.12);
+  transform: translateY(-2px);
+}
+
+.suite-nav-brand {
+  border-color: transparent !important;
+  color: #f8fcff !important;
+  background: transparent !important;
+  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 .corner-glyph {
@@ -1999,7 +2025,7 @@ a {
     justify-content: center;
   }
 
-  .nav-rail {
+  .suite-nav {
     display: none;
   }
 

@@ -918,14 +918,29 @@ function FinalScene() {
   );
 }
 
-function NavRail() {
+const suiteNavItems = [
+  { id: "top", label: "Overview" },
+  { id: "command", label: "Run Suite" },
+  { id: "triage", label: "Triage" },
+  { id: "engiagent", label: "Agent" },
+  { id: "qaforge", label: "QA" },
+  { id: "evaluation", label: "Metrics" },
+];
+
+function SuiteNav() {
   return (
-    <nav className="nav-rail" aria-label="Scene navigation">
-      {["top", "command", "triage", "data", "core", "suite", "engiagent", "qaforge", "training", "evaluation", "analysis", "explain"].map((item) => (
-        <a href={`#${item}`} key={item}>
+    <nav className="suite-nav" aria-label="Suite navigation">
+      <a href="#top" className="suite-nav-brand">
+        Engineering Intelligence Suite
+      </a>
+      <div>
+        {suiteNavItems.map((item) => (
+          <a href={`#${item.id}`} key={item.id}>
           <Sparkles size={14} />
+            {item.label}
         </a>
       ))}
+      </div>
     </nav>
   );
 }
@@ -1022,7 +1037,7 @@ export function App() {
 
   return (
     <main id="top">
-      <NavRail />
+      <SuiteNav />
       <IntroScene />
       <SuiteCommandCenter
         suiteIssue={suiteIssue}
