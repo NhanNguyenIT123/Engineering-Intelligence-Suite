@@ -43,30 +43,94 @@ INCIDENT_TERMS = [
     "blocked by cors",
 ]
 
+ENGINEERING_CONTEXT_TERMS = [
+    "api",
+    "backend",
+    "frontend",
+    "database",
+    "requirement",
+    "acceptance criteria",
+    "test report",
+    "test case",
+    "incident",
+    "root cause",
+    "8d",
+    "traceback",
+    "stack trace",
+    "deployment",
+    "regression",
+    "staging",
+    "production",
+    "service",
+    "connector",
+    "workflow",
+    "validation",
+    "qa",
+    "defect",
+    "latency",
+    "timeout",
+    "http",
+    "error",
+]
+
+NON_ENGINEERING_TERMS = [
+    "unikey",
+    "tone0",
+    "tone1",
+    "tone2",
+    "tone3",
+    "tone4",
+    "tone5",
+    "key mapping",
+    "hook-bowl",
+]
+
 
 def analyze_engineering_document(filename: str, content: bytes, triage: dict | None = None) -> dict:
     text = extract_document_text(filename, content)
     chunks = chunk_document_text(text)
     summary = summarize_document(filename, text, chunks)
     evidence = extract_document_evidence(chunks)
+    relevance = assess_document_relevance(filename, text, summary)
+    if not relevance["accepted"]:
+        return {
+            "module": "EngiAgent",
+            "document": build_document_metadata(filename, content, text, chunks),
+            "summary": summary,
+            "document_relevance": relevance,
+            "document_triage": {
+                "predicted_label": "unsupported_document",
+                "likely_cause": relevance["reason"],
+                "source": "document_relevance_guardrail",
+                "actionable_incident": False,
+            },
+            "chunks": chunks,
+            "evidence": evidence[:2],
+            "investigation": build_unsupported_document_response(summary, relevance),
+        }
     resolved_triage = normalize_document_triage(triage, summary, text)
     investigation_text = build_investigation_input(summary, evidence, text)
     investigation = build_investigation_draft(investigation_text, resolved_triage)
 
     return {
         "module": "EngiAgent",
-        "document": {
-            "filename": filename,
-            "extension": Path(filename).suffix.lower(),
-            "bytes": len(content),
-            "characters": len(text),
-            "chunk_count": len(chunks),
-        },
+        "document": build_document_metadata(filename, content, text, chunks),
         "summary": summary,
+        "document_relevance": relevance,
         "document_triage": resolved_triage,
         "chunks": chunks,
         "evidence": evidence,
         "investigation": investigation,
+    }
+
+
+def build_document_metadata(filename: str, content: bytes, text: str, chunks: list[dict]) -> dict:
+    return {
+        "filename": filename,
+        "extension": Path(filename).suffix.lower(),
+        "bytes": len(content),
+        "characters": len(text),
+        "chunk_count": len(chunks),
     }
 
 
@@ -209,6 +273,102 @@ def infer_document_triage(summary: dict, text: str) -> dict:
         "likely_cause": "uploaded document is reference or requirement context rather than a confirmed failure",
         "source": "document_intake_inference",
         "actionable_incident": False,
+    }
+
+
+def assess_document_relevance(filename: str, text: str, summary: dict) -> dict:
+    lowered = f"{filename} {text}".lower()
+    non_engineering_score = sum(1 for term in NON_ENGINEERING_TERMS if term in lowered)
+    engineering_score = sum(1 for term in ENGINEERING_CONTEXT_TERMS if term in lowered)
+    accepted_types = {
+        "test_report",
+        "incident_report",
+        "requirement_document",
+        "runtime_log",
+        "project_document",
+    }
+
+    if non_engineering_score >= 2 and engineering_score < 3:
+        return {
+            "accepted": False,
+            "score": engineering_score,
+            "reason": "document looks like a keyboard/config mapping, not an engineering issue, requirement, log, or test report",
+            "expected_inputs": expected_document_inputs(),
+        }
+    if summary["document_type"] in accepted_types:
+        return {
+            "accepted": True,
+            "score": engineering_score,
+            "reason": f"accepted as {summary['document_type']}",
+            "expected_inputs": expected_document_inputs(),
+        }
+    if engineering_score >= 3:
+        return {
+            "accepted": True,
+            "score": engineering_score,
+            "reason": "accepted because engineering workflow terms were detected",
+            "expected_inputs": expected_document_inputs(),
+        }
+    return {
+        "accepted": False,
+        "score": engineering_score,
+        "reason": "document does not contain enough engineering workflow context for EngiAgent",
+        "expected_inputs": expected_document_inputs(),
+    }
+
+
+def expected_document_inputs() -> list[str]:
+    return [
+        "test reports with expected/actual results",
+        "incident notes with observed failure and reproduction context",
+        "runtime logs or stack traces",
+        "requirements or acceptance criteria",
+        "engineering design notes with workflow/API/system constraints",
+    ]
+
+
+def build_unsupported_document_response(summary: dict, relevance: dict) -> dict:
+    return {
+        "module": "EngiAgent",
+        "status": "document_rejected",
+        "agent_runtime": "document_intake_guardrail",
+        "predicted_label": "unsupported_document",
+        "agent_plan": [
+            "Validate document relevance.",
+            "Skip investigation workflow when the input is outside the engineering domain.",
+        ],
+        "investigation_summary": (
+            "EngiAgent skipped this upload because it does not look like an engineering issue, "
+            "test report, runtime log, requirement, or design note."
+        ),
+        "review_artifact": {
+            "review_type": "unsupported_document",
+            "extracted_context": " ".join(summary["key_findings"][:3]),
+            "suggested_use": "Upload an engineering artifact before running investigation or document review.",
+            "open_questions": [
+                "Is there a concrete issue, requirement, test result, or runtime failure to analyze?",
+                "Can you provide expected behavior, actual behavior, reproduction steps, or acceptance criteria?",
+            ],
+            "next_steps": [
+                "Use a test report, incident note, stack trace, requirement document, or engineering design note.",
+                "Do not route keyboard maps, unrelated configs, or personal text files into the agent workflow.",
+            ],
+            "expected_inputs": relevance["expected_inputs"],
+        },
+        "eight_d": {},
+        "evidence": [],
+        "tool_trace": [
+            {"tool": "document_relevance_guardrail", "result": relevance["reason"]},
+            {"tool": "agent_workflow_router", "result": "EngiAgent workflow skipped"},
+        ],
+        "memory_notes": ["No investigation memory was created for unsupported documents."],
+        "guardrails": {
+            "accepted_engineering_document": False,
+            "grounded_in_submitted_report": False,
+            "complete_8d_fields": None,
+            "missing_fields": [],
+            "requires_human_approval": False,
+        },
     }
 
 

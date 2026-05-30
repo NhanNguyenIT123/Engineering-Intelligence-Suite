@@ -103,6 +103,20 @@ class SuiteModuleTests(unittest.TestCase):
         self.assertEqual(result["investigation"]["eight_d"], {})
         self.assertIn("open_questions", result["investigation"]["review_artifact"])
 
+    def test_engiagent_rejects_irrelevant_keymap_document(self):
+        keymap = (
+            "; This is UniKey user-defined key mapping file, generated from UniKey (Windows)\n"
+            "Z = Tone0\nS = Tone1\nF = Tone2\nR = Tone3\nX = Tone4\nJ = Tone5\n"
+        )
+
+        result = analyze_engineering_document("keymap.txt", keymap.encode("utf-8"))
+
+        self.assertFalse(result["document_relevance"]["accepted"])
+        self.assertEqual(result["document_triage"]["predicted_label"], "unsupported_document")
+        self.assertEqual(result["investigation"]["status"], "document_rejected")
+        self.assertEqual(result["investigation"]["agent_runtime"], "document_intake_guardrail")
+        self.assertEqual(result["investigation"]["eight_d"], {})
+
     def test_document_chunker_preserves_signal_scores(self):
         chunks = chunk_document_text(
             "First paragraph has no risk.\n\nSecond paragraph reports timeout and API error in staging.",

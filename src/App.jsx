@@ -706,7 +706,13 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
         <span className="output-kicker">AGENT OUTPUT</span>
         {result ? (
           <>
-            <strong>{result.predicted_label === "document_review" ? "Document Review Ready" : "8D Draft Ready"}</strong>
+            <strong>
+              {result.predicted_label === "unsupported_document"
+                ? "Document Rejected"
+                : result.predicted_label === "document_review"
+                  ? "Document Review Ready"
+                  : "8D Draft Ready"}
+            </strong>
             <span className="runtime-chip">{result.agent_runtime}</span>
             {documentResult && (
               <div className="document-summary-panel">
@@ -734,6 +740,12 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
                   <span>ACTIONABLE</span>
                   <b>{String(documentResult.document_triage.actionable_incident)}</b>
                 </div>
+                {documentResult.document_relevance && (
+                  <div>
+                    <span>ACCEPTED</span>
+                    <b>{String(documentResult.document_relevance.accepted)}</b>
+                  </div>
+                )}
               </div>
             )}
             <p>{result.investigation_summary}</p>
