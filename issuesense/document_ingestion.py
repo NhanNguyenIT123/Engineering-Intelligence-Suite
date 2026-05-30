@@ -1,0 +1,238 @@
+from __future__ import annotations
+
+import re
+from io import BytesIO
+from pathlib import Path
+
+from issuesense.engiagent import build_investigation_draft
+
+
+TEXT_EXTENSIONS = {".txt", ".md", ".log", ".csv", ".json"}
+DOCUMENT_EXTENSIONS = TEXT_EXTENSIONS | {".pdf", ".docx"}
+
+SIGNAL_TERMS = [
+    "error",
+    "exception",
+    "failed",
+    "failure",
+    "timeout",
+    "latency",
+    "expected",
+    "actual",
+    "staging",
+    "production",
+    "regression",
+    "requirement",
+    "api",
+    "database",
+    "memory",
+    "cpu",
+]
+
+
+def analyze_engineering_document(filename: str, content: bytes, triage: dict | None = None) -> dict:
+    text = extract_document_text(filename, content)
+    chunks = chunk_document_text(text)
+    summary = summarize_document(filename, text, chunks)
+    evidence = extract_document_evidence(chunks)
+    investigation_text = build_investigation_input(summary, evidence, text)
+    investigation = build_investigation_draft(investigation_text, triage)
+
+    return {
+        "module": "EngiAgent",
+        "document": {
+            "filename": filename,
+            "extension": Path(filename).suffix.lower(),
+            "bytes": len(content),
+            "characters": len(text),
+            "chunk_count": len(chunks),
+        },
+        "summary": summary,
+        "chunks": chunks,
+        "evidence": evidence,
+        "investigation": investigation,
+    }
+
+
+def extract_document_text(filename: str, content: bytes) -> str:
+    extension = Path(filename).suffix.lower()
+    if extension not in DOCUMENT_EXTENSIONS:
+        raise ValueError(
+            f"Unsupported document type '{extension or 'unknown'}'. "
+            "Use .txt, .md, .log, .csv, .json, .pdf, or .docx."
+        )
+    if not content:
+        raise ValueError("Uploaded document is empty.")
+    if extension in TEXT_EXTENSIONS:
+        return _decode_text(content)
+    if extension == ".pdf":
+        return _extract_pdf_text(content)
+    if extension == ".docx":
+        return _extract_docx_text(content)
+    raise ValueError(f"Unsupported document type '{extension}'.")
+
+
+def chunk_document_text(text: str, chunk_size: int = 950) -> list[dict]:
+    clean_text = normalize_document_text(text)
+    if not clean_text:
+        raise ValueError("No readable text was extracted from the document.")
+
+    paragraphs = [part.strip() for part in re.split(r"\n\s*\n", clean_text) if part.strip()]
+    chunks: list[dict] = []
+    buffer = ""
+    start = 0
+    cursor = 0
+
+    for paragraph in paragraphs:
+        if not buffer:
+            start = cursor
+        candidate = f"{buffer}\n\n{paragraph}".strip() if buffer else paragraph
+        if len(candidate) > chunk_size and buffer:
+            chunks.append(_make_chunk(len(chunks) + 1, buffer, start))
+            start = cursor
+            buffer = paragraph
+        else:
+            buffer = candidate
+        cursor += len(paragraph) + 2
+
+    if buffer:
+        chunks.append(_make_chunk(len(chunks) + 1, buffer, start))
+
+    return chunks
+
+
+def summarize_document(filename: str, text: str, chunks: list[dict]) -> dict:
+    lines = [line.strip() for line in normalize_document_text(text).splitlines() if line.strip()]
+    signal_lines = [line for line in lines if _signal_score(line) > 0]
+    key_findings = [_compact(line, 220) for line in signal_lines[:6]]
+    if not key_findings:
+        key_findings = [_compact(line, 220) for line in lines[:4]]
+
+    return {
+        "title": Path(filename).stem or filename,
+        "document_type": infer_document_type(filename, text),
+        "word_count": len(re.findall(r"\b\w+\b", text)),
+        "chunk_count": len(chunks),
+        "key_findings": key_findings,
+        "risk_level": infer_risk_level(text),
+    }
+
+
+def extract_document_evidence(chunks: list[dict], limit: int = 6) -> list[dict]:
+    ranked = sorted(chunks, key=lambda chunk: _signal_score(chunk["text"]), reverse=True)
+    evidence = []
+    for chunk in ranked[:limit]:
+        score = _signal_score(chunk["text"])
+        evidence.append(
+            {
+                "id": f"DOC-EV-{len(evidence) + 1:02d}",
+                "chunk_id": chunk["id"],
+                "score": score,
+                "text": _compact(chunk["text"], 360),
+                "source": "uploaded_document",
+            }
+        )
+    return evidence
+
+
+def build_investigation_input(summary: dict, evidence: list[dict], text: str) -> str:
+    findings = "\n".join(f"- {item}" for item in summary["key_findings"])
+    evidence_text = "\n".join(f"- {item['text']}" for item in evidence[:4])
+    if not findings and not evidence_text:
+        return _compact(text, 1800)
+    return (
+        f"Document type: {summary['document_type']}.\n"
+        f"Risk level: {summary['risk_level']}.\n"
+        f"Key findings:\n{findings}\n"
+        f"Evidence snippets:\n{evidence_text}"
+    )
+
+
+def infer_document_type(filename: str, text: str) -> str:
+    lowered = f"{filename} {text}".lower()
+    if any(term in lowered for term in ["test report", "test case", "expected", "actual"]):
+        return "test_report"
+    if any(term in lowered for term in ["incident", "root cause", "8d", "containment"]):
+        return "incident_report"
+    if any(term in lowered for term in ["requirement", "acceptance criteria", "user story"]):
+        return "requirement_document"
+    if any(term in lowered for term in ["traceback", "exception", "console", "stack"]):
+        return "runtime_log"
+    return "engineering_note"
+
+
+def infer_risk_level(text: str) -> str:
+    lowered = text.lower()
+    high_terms = ["production", "data loss", "security", "outage", "critical", "cannot proceed"]
+    medium_terms = ["staging", "regression", "timeout", "failed", "error", "blocked"]
+    if any(term in lowered for term in high_terms):
+        return "high"
+    if any(term in lowered for term in medium_terms):
+        return "medium"
+    return "low"
+
+
+def normalize_document_text(text: str) -> str:
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _extract_pdf_text(content: bytes) -> str:
+    try:
+        from pypdf import PdfReader
+    except ImportError as exc:
+        raise ValueError("PDF support requires pypdf. Install it with: pip install pypdf") from exc
+
+    reader = PdfReader(BytesIO(content))
+    pages = [page.extract_text() or "" for page in reader.pages]
+    return normalize_document_text("\n\n".join(pages))
+
+
+def _extract_docx_text(content: bytes) -> str:
+    try:
+        from docx import Document
+    except ImportError as exc:
+        raise ValueError("DOCX support requires python-docx. Install it with: pip install python-docx") from exc
+
+    document = Document(BytesIO(content))
+    lines = [paragraph.text for paragraph in document.paragraphs if paragraph.text.strip()]
+    for table in document.tables:
+        for row in table.rows:
+            cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+            if cells:
+                lines.append(" | ".join(cells))
+    return normalize_document_text("\n".join(lines))
+
+
+def _decode_text(content: bytes) -> str:
+    for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+        try:
+            return normalize_document_text(content.decode(encoding))
+        except UnicodeDecodeError:
+            continue
+    return normalize_document_text(content.decode("utf-8", errors="replace"))
+
+
+def _make_chunk(index: int, text: str, start: int) -> dict:
+    clean = text.strip()
+    return {
+        "id": f"CHUNK-{index:03d}",
+        "text": clean,
+        "start_char": start,
+        "end_char": start + len(clean),
+        "signal_score": _signal_score(clean),
+    }
+
+
+def _signal_score(text: str) -> int:
+    lowered = text.lower()
+    return sum(1 for term in SIGNAL_TERMS if term in lowered)
+
+
+def _compact(text: str, limit: int) -> str:
+    clean = " ".join(text.split())
+    if len(clean) <= limit:
+        return clean
+    return f"{clean[: limit - 3]}..."

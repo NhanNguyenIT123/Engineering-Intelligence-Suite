@@ -2,6 +2,7 @@ import unittest
 
 from issuesense.engiagent import build_investigation_draft
 from issuesense.console_diagnostics import analyze_console_log, run_console_self_test
+from issuesense.document_ingestion import analyze_engineering_document, chunk_document_text
 from issuesense.qaforge import generate_test_plan
 from issuesense.suite import run_suite_workflow
 
@@ -62,6 +63,36 @@ class SuiteModuleTests(unittest.TestCase):
         self.assertEqual(result["scenario_count"], 6)
         self.assertEqual(result["detection_accuracy"], 1.0)
         self.assertTrue(all(item["passed"] for item in result["results"]))
+
+    def test_engiagent_analyzes_uploaded_text_document(self):
+        report = (
+            "Test Report: Checkout regression failure\n\n"
+            "Expected: payment confirmation is returned within 2 seconds.\n"
+            "Actual: staging returns HTTP 500 after 14 seconds when the sandbox provider is called.\n"
+            "The failure is reproducible only on staging after the latest connector deployment."
+        )
+
+        result = analyze_engineering_document(
+            "checkout-test-report.md",
+            report.encode("utf-8"),
+            {"predicted_label": "test_environment_issue", "likely_cause": "staging payment sandbox mismatch"},
+        )
+
+        self.assertEqual(result["module"], "EngiAgent")
+        self.assertEqual(result["summary"]["document_type"], "test_report")
+        self.assertGreaterEqual(result["document"]["chunk_count"], 1)
+        self.assertGreaterEqual(len(result["evidence"]), 1)
+        self.assertEqual(result["investigation"]["module"], "EngiAgent")
+        self.assertIn("D4_root_cause_hypothesis", result["investigation"]["eight_d"])
+
+    def test_document_chunker_preserves_signal_scores(self):
+        chunks = chunk_document_text(
+            "First paragraph has no risk.\n\nSecond paragraph reports timeout and API error in staging.",
+            chunk_size=35,
+        )
+
+        self.assertEqual(len(chunks), 2)
+        self.assertGreater(chunks[1]["signal_score"], chunks[0]["signal_score"])
 
 
 if __name__ == "__main__":

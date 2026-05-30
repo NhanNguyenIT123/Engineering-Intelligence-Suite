@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from issuesense.console_diagnostics import analyze_console_log, run_console_self_test
+from issuesense.document_ingestion import analyze_engineering_document
 from issuesense.engiagent import build_investigation_draft
 from issuesense.explain import build_explanation
 from issuesense.experiment_tracking import load_runs
@@ -82,7 +83,7 @@ def suite_modules():
             {
                 "name": "EngiAgent",
                 "role": "LangChain Core investigation and 8D draft layer",
-                "endpoint": "POST /engiagent/8d-draft",
+                "endpoint": "POST /engiagent/8d-draft, POST /engiagent/analyze-document",
                 "status": "mvp",
             },
             {
@@ -143,6 +144,23 @@ def predict(request: PredictRequest):
 @app.post("/engiagent/8d-draft")
 def engiagent_8d_draft(request: EngiAgentRequest):
     return build_investigation_draft(request.text, request.triage)
+
+
+@app.post("/engiagent/analyze-document")
+async def engiagent_analyze_document(
+    file: UploadFile = File(...),
+    triage: str | None = Form(default=None),
+):
+    try:
+        parsed_triage = json.loads(triage) if triage else None
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail="triage must be a valid JSON object") from exc
+
+    try:
+        content = await file.read()
+        return analyze_engineering_document(file.filename or "uploaded-document.txt", content, parsed_triage)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/qaforge/generate-tests")

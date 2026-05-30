@@ -14,6 +14,7 @@ import {
   Radar,
   Send,
   Sparkles,
+  Workflow,
 } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -97,6 +98,18 @@ async function postJson(path, payload) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail);
+  }
+  return response.json();
+}
+
+async function postForm(path, formData) {
+  const response = await fetch(`${apiUrl}${path}`, {
+    method: "POST",
+    body: formData,
   });
   if (!response.ok) {
     const detail = await response.text();
@@ -588,7 +601,11 @@ function SuiteMapScene() {
 
 function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
   const [status, setStatus] = useState("idle");
+  const [documentStatus, setDocumentStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [documentError, setDocumentError] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [documentResult, setDocumentResult] = useState(null);
 
   async function generateDraft() {
     setStatus("running");
@@ -605,6 +622,37 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
     } catch (exc) {
       setStatus("error");
       setError("EngiAgent endpoint is unavailable. Start scripts\\run_api.ps1 and try again.");
+    }
+  }
+
+  async function analyzeDocument() {
+    if (!selectedFile) {
+      setDocumentError("Choose a document first.");
+      return;
+    }
+    setDocumentStatus("running");
+    setDocumentError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      if (triageResult?.triage) {
+        formData.append(
+          "triage",
+          JSON.stringify({ ...triageResult.triage, predicted_label: triageResult.label })
+        );
+      }
+      const data = await postForm("/engiagent/analyze-document", formData);
+      setDocumentResult(data);
+      setResult(data.investigation);
+      setInput(
+        data.summary?.key_findings?.length
+          ? data.summary.key_findings.join("\n")
+          : input
+      );
+      setDocumentStatus("done");
+    } catch (exc) {
+      setDocumentStatus("error");
+      setDocumentError("Document analysis failed. Check file type and make sure the API server is running.");
     }
   }
 
@@ -629,6 +677,30 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
           {status === "running" ? "Drafting" : "Generate 8D Draft"}
         </button>
         {error && <div className="api-error">{error}</div>}
+        <div className="document-intake">
+          <div className="console-header">
+            <span>DOCUMENT INTAKE</span>
+            <strong>{apiUrl}/engiagent/analyze-document</strong>
+          </div>
+          <label className="file-drop">
+            <FileSearch size={18} />
+            <span>{selectedFile ? selectedFile.name : "Upload .txt, .md, .log, .pdf, or .docx"}</span>
+            <input
+              type="file"
+              accept=".txt,.md,.log,.csv,.json,.pdf,.docx"
+              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+            />
+          </label>
+          <button
+            className="classify-button secondary-action"
+            onClick={analyzeDocument}
+            disabled={documentStatus === "running"}
+          >
+            {documentStatus === "running" ? <Cpu className="spin" size={18} /> : <Workflow size={18} />}
+            {documentStatus === "running" ? "Analyzing" : "Analyze Document"}
+          </button>
+          {documentError && <div className="api-error">{documentError}</div>}
+        </div>
       </div>
       <div className="module-output engiagent-output">
         <span className="output-kicker">AGENT OUTPUT</span>
@@ -636,7 +708,37 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
           <>
             <strong>8D Draft Ready</strong>
             <span className="runtime-chip">{result.agent_runtime}</span>
+            {documentResult && (
+              <div className="document-summary-panel">
+                <div>
+                  <span>DOCUMENT</span>
+                  <b>{documentResult.document.filename}</b>
+                </div>
+                <div>
+                  <span>TYPE</span>
+                  <b>{documentResult.summary.document_type.replaceAll("_", " ")}</b>
+                </div>
+                <div>
+                  <span>CHUNKS</span>
+                  <b>{documentResult.document.chunk_count}</b>
+                </div>
+                <div>
+                  <span>RISK</span>
+                  <b>{documentResult.summary.risk_level}</b>
+                </div>
+              </div>
+            )}
             <p>{result.investigation_summary}</p>
+            {documentResult?.evidence?.length > 0 && (
+              <div className="document-evidence-grid">
+                {documentResult.evidence.slice(0, 4).map((item) => (
+                  <div key={item.id}>
+                    <span>{item.id} · {item.chunk_id}</span>
+                    <p>{item.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
             {result.agent_plan?.length > 0 && (
               <div className="agent-plan">
                 {result.agent_plan.map((step, index) => (

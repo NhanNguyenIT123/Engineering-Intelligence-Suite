@@ -93,6 +93,7 @@ GET  http://127.0.0.1:8765/suite/modules
 POST http://127.0.0.1:8765/suite/run
 POST http://127.0.0.1:8765/predict
 POST http://127.0.0.1:8765/engiagent/8d-draft
+POST http://127.0.0.1:8765/engiagent/analyze-document
 POST http://127.0.0.1:8765/qaforge/generate-tests
 ```
 
@@ -121,6 +122,15 @@ The response includes:
 - `tool_trace`: tool-level execution trace.
 - `guardrails`: completeness and grounding checks.
 - `eight_d`: D1-D8 investigation draft.
+
+EngiAgent also supports document intake through `POST /engiagent/analyze-document`.
+Upload `.txt`, `.md`, `.log`, `.csv`, `.json`, `.pdf`, or `.docx` files and the module will:
+
+- extract readable text from the document.
+- split the document into evidence chunks.
+- summarize key findings and risk level.
+- pass the grounded evidence into the investigation workflow.
+- return a document-backed 8D draft for human review.
 
 If `langchain-core` is missing, the endpoint falls back to `deterministic_fallback` so the demo still runs on a fresh machine.
 

@@ -1251,6 +1251,52 @@ button {
   font: 600 14px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
+.document-intake {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 157, 46, 0.22);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, rgba(255, 157, 46, 0.1), transparent),
+    rgba(2, 8, 18, 0.34);
+}
+
+.file-drop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px dashed rgba(141, 239, 255, 0.3);
+  border-radius: 18px;
+  color: #d8efff;
+  background: rgba(2, 8, 18, 0.58);
+  cursor: pointer;
+}
+
+.file-drop svg {
+  color: #8defff;
+}
+
+.file-drop span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.file-drop input {
+  display: none;
+}
+
+.secondary-action {
+  background:
+    linear-gradient(135deg, rgba(255, 157, 46, 0.92), rgba(53, 217, 255, 0.76)),
+    #10223a;
+}
+
 .module-output {
   position: absolute;
   right: 6vw;
@@ -1297,7 +1343,8 @@ button {
 }
 
 .agent-plan,
-.eight-d-grid {
+.eight-d-grid,
+.document-evidence-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 10px;
@@ -1309,6 +1356,7 @@ button {
 
 .agent-plan div,
 .eight-d-grid div,
+.document-evidence-grid div,
 .guardrail-strip div,
 .trace-strip div,
 .qa-case-grid div,
@@ -1323,8 +1371,14 @@ button {
   padding: 12px;
 }
 
+.document-evidence-grid div {
+  padding: 12px;
+  border-color: rgba(255, 157, 46, 0.2);
+}
+
 .agent-plan span,
 .eight-d-grid span,
+.document-evidence-grid span,
 .guardrail-strip span,
 .qa-case-grid span,
 .coverage-grid span {
@@ -1344,10 +1398,40 @@ button {
 }
 
 .eight-d-grid p,
+.document-evidence-grid p,
 .qa-case-grid p {
   margin-top: 6px;
   color: #c9d8e4;
   font-size: 12px;
+}
+
+.document-summary-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.document-summary-panel div {
+  padding: 12px;
+  border: 1px solid rgba(255, 157, 46, 0.2);
+  border-radius: 16px;
+  background: rgba(255, 157, 46, 0.08);
+}
+
+.document-summary-panel span {
+  display: block;
+  color: #ffbd75;
+  font-size: 10px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.document-summary-panel b {
+  display: block;
+  margin-top: 5px;
+  color: #f8fcff;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .guardrail-strip {
