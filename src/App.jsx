@@ -1069,6 +1069,10 @@ function DatasetAnalysisScene({ metricsData }) {
 
 function ExplainScene({ result }) {
   const examples = result?.explanation?.similar_examples ?? [];
+  const [selectedEvidenceId, setSelectedEvidenceId] = useState(null);
+  const selectedEvidence =
+    examples.find((example) => example.id === selectedEvidenceId) ?? examples[0] ?? null;
+
   return (
     <Scene
       id="explain"
@@ -1106,14 +1110,34 @@ function ExplainScene({ result }) {
           </div>
         )}
         {examples.length > 0 && (
-          <div className="evidence-stack">
-            {examples.slice(0, 3).map((example) => (
-              <div className="evidence-chip" key={example.id}>
-                <b>{example.id}</b>
-                <span>{displayLabel(example.label)} - {example.similarity.toFixed(2)}</span>
+          <>
+            <div className="evidence-stack">
+              {examples.slice(0, 3).map((example) => (
+                <button
+                  className={`evidence-chip ${selectedEvidence?.id === example.id ? "active" : ""}`}
+                  key={example.id}
+                  onClick={() => setSelectedEvidenceId(example.id)}
+                >
+                  <b>{example.id}</b>
+                  <span>{displayLabel(example.label)} - {example.similarity.toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+            {selectedEvidence && (
+              <div className="evidence-detail">
+                <div>
+                  <span>SELECTED EVIDENCE</span>
+                  <b>{selectedEvidence.id}</b>
+                </div>
+                <p>{selectedEvidence.text}</p>
+                <div className="evidence-meta">
+                  <span>{displayLabel(selectedEvidence.label)}</span>
+                  <span>{selectedEvidence.source}</span>
+                  <span>similarity {selectedEvidence.similarity.toFixed(3)}</span>
+                </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </Scene>

@@ -649,13 +649,29 @@ button {
 }
 
 .triage-scene {
-  min-height: 112vh;
+  grid-template-columns: minmax(360px, 0.78fr) minmax(460px, 1.22fr);
+  grid-template-areas:
+    "copy output"
+    "console output";
+  align-items: start;
+  min-height: 100vh;
+  gap: 28px;
+}
+
+.triage-scene .scene-copy {
+  grid-area: copy;
+}
+
+.triage-scene .scene-copy h2 {
+  font-size: clamp(40px, 6vw, 90px);
 }
 
 .triage-console {
-  position: relative;
+  grid-area: console;
+  position: sticky;
+  top: 102px;
   z-index: 8;
-  width: min(780px, 62vw);
+  width: 100%;
   padding: 22px;
   border: 1px solid rgba(141, 239, 255, 0.28);
   border-radius: 28px;
@@ -831,13 +847,16 @@ button {
 }
 
 .live-output {
-  position: absolute;
-  right: 7vw;
-  bottom: 13vh;
+  grid-area: output;
+  position: relative;
+  right: auto;
+  bottom: auto;
   z-index: 7;
   display: grid;
   gap: 14px;
-  width: min(420px, 40vw);
+  width: 100%;
+  max-height: calc(100vh - 140px);
+  overflow: auto;
   padding: 24px;
   border: 1px solid rgba(255, 157, 46, 0.24);
   border-radius: 28px;
@@ -849,7 +868,7 @@ button {
 
 .live-output strong {
   color: #f8fcff;
-  font-size: clamp(30px, 4vw, 54px);
+  font-size: clamp(28px, 3.5vw, 48px);
   line-height: 1;
 }
 
@@ -1814,10 +1833,11 @@ button {
 }
 
 .reasoning-panel {
-  position: absolute;
-  right: 11vw;
-  bottom: 13vh;
-  width: min(500px, 50vw);
+  position: relative;
+  z-index: 6;
+  width: min(760px, 100%);
+  max-height: calc(100vh - 160px);
+  overflow: auto;
   padding: 24px;
   border-radius: 18px;
 }
@@ -1846,10 +1866,20 @@ button {
 .evidence-chip {
   display: grid;
   gap: 3px;
+  width: 100%;
+  text-align: left;
   padding: 10px 12px;
   border: 1px solid rgba(141, 239, 255, 0.2);
   border-radius: 12px;
   background: rgba(2, 8, 18, 0.46);
+  cursor: pointer;
+  font: inherit;
+}
+
+.evidence-chip.active,
+.evidence-chip:hover {
+  border-color: rgba(255, 189, 117, 0.58);
+  background: rgba(255, 157, 46, 0.1);
 }
 
 .evidence-chip b {
@@ -1859,6 +1889,42 @@ button {
 .evidence-chip span {
   color: #8aa1b5;
   font-size: 12px;
+}
+
+.evidence-detail {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(255, 189, 117, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 157, 46, 0.08);
+}
+
+.evidence-detail b {
+  display: block;
+  margin-top: 4px;
+  color: #f8fcff;
+}
+
+.evidence-detail p {
+  margin: 0;
+}
+
+.evidence-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.evidence-meta span {
+  padding: 6px 8px;
+  border: 1px solid rgba(141, 239, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(2, 8, 18, 0.44);
+  color: #8defff;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
 }
 
 .review-panel {
@@ -2193,6 +2259,25 @@ button {
 
   .scene-copy {
     max-width: 680px;
+  }
+
+  .triage-scene {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "copy"
+      "console"
+      "output";
+  }
+
+  .triage-console {
+    position: relative;
+    top: auto;
+  }
+
+  .live-output,
+  .reasoning-panel {
+    max-height: none;
+    overflow: visible;
   }
 
   .module-scene {
