@@ -656,7 +656,7 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
     }
   }
 
-  const dEntries = result ? Object.entries(result.eight_d) : [];
+  const dEntries = result?.eight_d ? Object.entries(result.eight_d) : [];
 
   return (
     <Scene
@@ -757,14 +757,44 @@ function EngiAgentScene({ input, setInput, triageResult, result, setResult }) {
                 ))}
               </div>
             )}
-            <div className="eight-d-grid">
-              {dEntries.map(([key, value]) => (
-                <div key={key}>
-                  <span>{key.replaceAll("_", " ")}</span>
-                  <p>{value}</p>
+            {result.review_artifact && (
+              <div className="review-artifact">
+                <div>
+                  <span>Suggested Use</span>
+                  <p>{result.review_artifact.suggested_use}</p>
                 </div>
-              ))}
-            </div>
+                <div>
+                  <span>Extracted Context</span>
+                  <p>{result.review_artifact.extracted_context}</p>
+                </div>
+                <div>
+                  <span>Open Questions</span>
+                  <ul>
+                    {result.review_artifact.open_questions.map((question) => (
+                      <li key={question}>{question}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <span>Next Steps</span>
+                  <ul>
+                    {result.review_artifact.next_steps.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+            {dEntries.length > 0 && (
+              <div className="eight-d-grid">
+                {dEntries.map(([key, value]) => (
+                  <div key={key}>
+                    <span>{key.replaceAll("_", " ")}</span>
+                    <p>{value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
             {result.guardrails && (
               <div className="guardrail-strip">
                 {Object.entries(result.guardrails)

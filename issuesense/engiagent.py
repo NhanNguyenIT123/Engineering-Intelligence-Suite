@@ -149,7 +149,7 @@ def _build_deterministic_investigation(
 
     return {
         "module": "EngiAgent",
-        "status": "draft_generated",
+        "status": "document_review_generated" if label == "document_review" else "draft_generated",
         "agent_runtime": "deterministic_fallback",
         "fallback_reason": fallback_reason,
         "agent_plan": [
@@ -159,12 +159,8 @@ def _build_deterministic_investigation(
             "Run grounding and completeness guardrails.",
         ],
         "input_summary": problem,
-        "investigation_summary": (
-            f"The finding is treated as {label.replace('_', ' ')}. "
-            f"The current hypothesis is {profile.likely_cause}. "
-            f"The draft should be reviewed by engineering/QA before execution."
-        ),
-        "eight_d": {
+        "investigation_summary": _build_summary_text(label, profile),
+        "eight_d": {} if label == "document_review" else {
             "D1_team": "Software engineer, QA engineer, product/domain owner, and integration or data owner if applicable.",
             "D2_problem_description": problem,
             "D3_containment_action": profile.containment,
@@ -174,11 +170,17 @@ def _build_deterministic_investigation(
             "D7_prevention_plan": profile.prevention,
             "D8_closure_note": "Close after evidence, fix, validation result, and owner sign-off are documented.",
         },
+        "review_artifact": _build_review_artifact(problem) if label == "document_review" else None,
         "evidence": evidence,
         "tool_trace": [
             {"tool": "issue_intake_parser", "result": f"{len(evidence)} evidence signal(s) extracted"},
             {"tool": "triage_context_reader", "result": f"label={label}"},
-            {"tool": "8d_template_builder", "result": "D1-D8 draft generated from grounded triage context"},
+            {
+                "tool": "document_review_builder" if label == "document_review" else "8d_template_builder",
+                "result": "reference document review generated; 8D workflow skipped"
+                if label == "document_review"
+                else "D1-D8 draft generated from grounded triage context",
+            },
         ],
         "memory_notes": [
             "This MVP stores no persistent user memory.",
@@ -186,7 +188,7 @@ def _build_deterministic_investigation(
         ],
         "guardrails": {
             "grounded_in_submitted_report": len(evidence) > 0,
-            "complete_8d_fields": True,
+            "complete_8d_fields": None if label == "document_review" else True,
             "missing_fields": [],
             "requires_human_approval": True,
         },
@@ -233,11 +235,35 @@ def _eight_d_builder_stage(state: dict) -> dict:
             "The upload is treated as reference or requirement context, not a confirmed defect. "
             "EngiAgent extracted review evidence and drafted next steps for human validation."
         )
-    else:
-        state["investigation_summary"] = (
-            f"The finding is treated as {label.replace('_', ' ')}. "
-            f"The agent routed evidence through the {label} workflow and drafted actions for human review."
+        state["review_artifact"] = {
+            "review_type": "reference_document_review",
+            "extracted_context": problem,
+            "suggested_use": "Use this document as supporting context for requirements, design constraints, or implementation notes.",
+            "open_questions": [
+                "Which concrete engineering issue or requirement should this document support?",
+                "Who owns the requirement, design decision, or review sign-off?",
+                "Does this document contain acceptance criteria that should be converted into QA cases?",
+            ],
+            "next_steps": [
+                "Extract requirements, assumptions, and constraints from the document.",
+                "Send confirmed requirements to QAForge for test coverage.",
+                "Send only confirmed failures or test reports to the 8D investigation workflow.",
+            ],
+        }
+        state["eight_d"] = {}
+        state["tool_trace"].append(
+            {
+                "tool": "document_review_builder",
+                "runtime": "langchain_core",
+                "result": "reference document review generated; 8D workflow skipped",
+            }
         )
+        return state
+
+    state["investigation_summary"] = (
+        f"The finding is treated as {label.replace('_', ' ')}. "
+        f"The agent routed evidence through the {label} workflow and drafted actions for human review."
+    )
     state["eight_d"] = {
         "D1_team": "Software engineer, QA engineer, product/domain owner, and integration or data owner if applicable.",
         "D2_problem_description": problem,
@@ -259,19 +285,24 @@ def _eight_d_builder_stage(state: dict) -> dict:
 
 
 def _guardrail_stage(state: dict) -> dict:
-    eight_d = state["eight_d"]
+    eight_d = state.get("eight_d") or {}
     missing = [key for key, value in eight_d.items() if not value]
     state["guardrails"] = {
         "grounded_in_submitted_report": len(state.get("evidence", [])) > 0,
-        "complete_8d_fields": len(missing) == 0,
+        "complete_8d_fields": len(missing) == 0 if eight_d else None,
         "missing_fields": missing,
         "requires_human_approval": True,
     }
+    guardrail_result = (
+        "document review passed grounding check; 8D not applicable"
+        if state.get("predicted_label") == "document_review"
+        else "8D draft passed completeness check; human approval required"
+    )
     state["tool_trace"].append(
         {
             "tool": "grounding_guardrail",
             "runtime": "langchain_core",
-            "result": "8D draft passed completeness check; human approval required",
+            "result": guardrail_result,
         }
     )
     state["memory_notes"] = [
@@ -307,6 +338,37 @@ def _summarize_problem(text: str, triage: dict | None) -> str:
     if triage and triage.get("likely_cause") and "likely cause from issuesense" not in clean.lower():
         return f"{clean} Likely cause from IssueSense: {triage['likely_cause']}."
     return clean
+
+
+def _build_summary_text(label: str, profile: InvestigationProfile) -> str:
+    if label == "document_review":
+        return (
+            "The upload is treated as reference or requirement context, not a confirmed defect. "
+            "EngiAgent extracted review evidence and drafted next steps for human validation."
+        )
+    return (
+        f"The finding is treated as {label.replace('_', ' ')}. "
+        f"The current hypothesis is {profile.likely_cause}. "
+        f"The draft should be reviewed by engineering/QA before execution."
+    )
+
+
+def _build_review_artifact(problem: str) -> dict:
+    return {
+        "review_type": "reference_document_review",
+        "extracted_context": problem,
+        "suggested_use": "Use this document as supporting context for requirements, design constraints, or implementation notes.",
+        "open_questions": [
+            "Which concrete engineering issue or requirement should this document support?",
+            "Who owns the requirement, design decision, or review sign-off?",
+            "Does this document contain acceptance criteria that should be converted into QA cases?",
+        ],
+        "next_steps": [
+            "Extract requirements, assumptions, and constraints from the document.",
+            "Send confirmed requirements to QAForge for test coverage.",
+            "Send only confirmed failures or test reports to the 8D investigation workflow.",
+        ],
+    }
 
 
 def _fallback_profile(text: str) -> InvestigationProfile:

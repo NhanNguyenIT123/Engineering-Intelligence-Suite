@@ -100,6 +100,8 @@ class SuiteModuleTests(unittest.TestCase):
         self.assertEqual(result["document_triage"]["predicted_label"], "document_review")
         self.assertEqual(result["investigation"]["predicted_label"], "document_review")
         self.assertIn("reference", result["investigation"]["investigation_summary"].lower())
+        self.assertEqual(result["investigation"]["eight_d"], {})
+        self.assertIn("open_questions", result["investigation"]["review_artifact"])
 
     def test_document_chunker_preserves_signal_scores(self):
         chunks = chunk_document_text(
