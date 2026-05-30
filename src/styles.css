@@ -1214,7 +1214,23 @@ button {
 }
 
 .module-scene {
-  min-height: 124vh;
+  grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
+  grid-template-areas:
+    "copy copy"
+    "console output";
+  align-items: start;
+  min-height: 100vh;
+  gap: 28px;
+}
+
+.module-scene .scene-copy {
+  grid-area: copy;
+  max-width: 1120px;
+}
+
+.module-scene .scene-copy h2 {
+  max-width: 980px;
+  font-size: clamp(34px, 4.6vw, 74px);
 }
 
 .module-console,
@@ -1231,9 +1247,12 @@ button {
 }
 
 .module-console {
+  grid-area: console;
+  position: sticky;
+  top: 102px;
   display: grid;
   gap: 16px;
-  width: min(720px, 62vw);
+  width: 100%;
   padding: 22px;
 }
 
@@ -1298,20 +1317,21 @@ button {
 }
 
 .module-output {
-  position: absolute;
-  right: 6vw;
-  bottom: 7vh;
+  grid-area: output;
+  position: relative;
+  right: auto;
+  bottom: auto;
   display: grid;
   gap: 14px;
-  width: min(680px, 56vw);
-  max-height: 78vh;
-  overflow: auto;
+  width: 100%;
+  max-height: none;
+  overflow: visible;
   padding: 24px;
 }
 
 .module-output strong {
   color: #f8fcff;
-  font-size: clamp(28px, 4vw, 52px);
+  font-size: clamp(24px, 3vw, 42px);
   line-height: 1;
 }
 
@@ -2155,6 +2175,19 @@ button {
 
   .scene-copy {
     max-width: 680px;
+  }
+
+  .module-scene {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "copy"
+      "console"
+      "output";
+  }
+
+  .module-console {
+    position: relative;
+    top: auto;
   }
 
   .stream,
