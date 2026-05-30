@@ -125,7 +125,7 @@ def _build_langchain_investigation(text: str, triage: dict | None = None) -> dic
     result = chain.invoke(initial_state)
     result["agent_runtime"] = "langchain_core_runnable_chain"
     result["module"] = "EngiAgent"
-    result["status"] = "draft_generated"
+    result["status"] = "document_review_generated" if result.get("predicted_label") == "document_review" else "draft_generated"
     result["registered_tools"] = [
         "parse_issue_evidence",
         "choose_investigation_profile",

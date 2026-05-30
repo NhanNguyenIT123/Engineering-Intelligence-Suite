@@ -1,0 +1,16 @@
+Console Runtime Log
+
+Access to fetch at 'http://127.0.0.1:8765/suite/run' from origin 'http://127.0.0.1:5176' has been blocked by CORS policy.
+
+Uncaught (in promise) TypeError: Failed to fetch
+    at runSuiteWorkflow (App.jsx:214:19)
+    at HTMLButtonElement.onClick (App.jsx:238:11)
+
+Expected:
+The React frontend should call the FastAPI suite endpoint and receive a JSON resolution package.
+
+Actual:
+The browser blocks the request before the API response is returned.
+
+Impact:
+The suite workflow cannot run from the UI even though the backend health endpoint responds successfully.

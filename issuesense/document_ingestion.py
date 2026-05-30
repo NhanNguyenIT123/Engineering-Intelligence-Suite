@@ -40,6 +40,8 @@ INCIDENT_TERMS = [
     "http 500",
     "server error",
     "crash",
+    "cors policy",
+    "failed to fetch",
     "blocked by cors",
 ]
 
@@ -235,14 +237,14 @@ def infer_document_type(filename: str, text: str) -> str:
         term in lowered for term in ["quick start", "portfolio claims", "available endpoints", "project structure"]
     ):
         return "project_document"
+    if any(term in lowered for term in ["traceback", "exception", "console", "stack", "cors policy", "failed to fetch"]):
+        return "runtime_log"
     if any(term in lowered for term in ["test report", "test execution", "actual:", "expected:"]):
         return "test_report"
     if any(term in lowered for term in ["incident", "root cause", "8d", "containment"]):
         return "incident_report"
     if any(term in lowered for term in ["requirement", "acceptance criteria", "user story"]):
         return "requirement_document"
-    if any(term in lowered for term in ["traceback", "exception", "console", "stack"]):
-        return "runtime_log"
     return "engineering_note"
 
 
@@ -447,6 +449,8 @@ def _signal_score(text: str) -> int:
 
 
 def _infer_incident_label(lowered: str) -> str:
+    if any(term in lowered for term in ["cors policy", "failed to fetch", "blocked by cors", "network response"]):
+        return "test_environment_issue"
     if any(term in lowered for term in ["latency", "timeout", "slow", "memory", "cpu"]):
         return "performance_issue"
     if any(term in lowered for term in ["staging", "environment", "config", "sandbox", "dependency"]):
