@@ -80,10 +80,26 @@ class SuiteModuleTests(unittest.TestCase):
 
         self.assertEqual(result["module"], "EngiAgent")
         self.assertEqual(result["summary"]["document_type"], "test_report")
+        self.assertTrue(result["document_triage"]["actionable_incident"])
         self.assertGreaterEqual(result["document"]["chunk_count"], 1)
         self.assertGreaterEqual(len(result["evidence"]), 1)
         self.assertEqual(result["investigation"]["module"], "EngiAgent")
         self.assertIn("D4_root_cause_hypothesis", result["investigation"]["eight_d"])
+
+    def test_engiagent_routes_reference_document_to_review(self):
+        readme = (
+            "# Demo Project\n\n"
+            "Issue reports may mention software defects, test-report findings, performance issue, "
+            "latency, and integration issue labels. The local quick start explains how to seed "
+            "the database and run tests."
+        )
+
+        result = analyze_engineering_document("README.md", readme.encode("utf-8"))
+
+        self.assertFalse(result["document_triage"]["actionable_incident"])
+        self.assertEqual(result["document_triage"]["predicted_label"], "document_review")
+        self.assertEqual(result["investigation"]["predicted_label"], "document_review")
+        self.assertIn("reference", result["investigation"]["investigation_summary"].lower())
 
     def test_document_chunker_preserves_signal_scores(self):
         chunks = chunk_document_text(

@@ -29,14 +29,29 @@ SIGNAL_TERMS = [
     "cpu",
 ]
 
+INCIDENT_TERMS = [
+    "actual:",
+    "expected:",
+    "failed on",
+    "fails on",
+    "failure is reproducible",
+    "traceback",
+    "stack trace",
+    "http 500",
+    "server error",
+    "crash",
+    "blocked by cors",
+]
+
 
 def analyze_engineering_document(filename: str, content: bytes, triage: dict | None = None) -> dict:
     text = extract_document_text(filename, content)
     chunks = chunk_document_text(text)
     summary = summarize_document(filename, text, chunks)
     evidence = extract_document_evidence(chunks)
+    resolved_triage = normalize_document_triage(triage, summary, text)
     investigation_text = build_investigation_input(summary, evidence, text)
-    investigation = build_investigation_draft(investigation_text, triage)
+    investigation = build_investigation_draft(investigation_text, resolved_triage)
 
     return {
         "module": "EngiAgent",
@@ -48,6 +63,7 @@ def analyze_engineering_document(filename: str, content: bytes, triage: dict | N
             "chunk_count": len(chunks),
         },
         "summary": summary,
+        "document_triage": resolved_triage,
         "chunks": chunks,
         "evidence": evidence,
         "investigation": investigation,
@@ -150,7 +166,12 @@ def build_investigation_input(summary: dict, evidence: list[dict], text: str) ->
 
 def infer_document_type(filename: str, text: str) -> str:
     lowered = f"{filename} {text}".lower()
-    if any(term in lowered for term in ["test report", "test case", "expected", "actual"]):
+    name = Path(filename).name.lower()
+    if name in {"readme.md", "readme.txt"} or any(
+        term in lowered for term in ["quick start", "portfolio claims", "available endpoints", "project structure"]
+    ):
+        return "project_document"
+    if any(term in lowered for term in ["test report", "test execution", "actual:", "expected:"]):
         return "test_report"
     if any(term in lowered for term in ["incident", "root cause", "8d", "containment"]):
         return "incident_report"
@@ -163,13 +184,47 @@ def infer_document_type(filename: str, text: str) -> str:
 
 def infer_risk_level(text: str) -> str:
     lowered = text.lower()
-    high_terms = ["production", "data loss", "security", "outage", "critical", "cannot proceed"]
-    medium_terms = ["staging", "regression", "timeout", "failed", "error", "blocked"]
+    high_terms = ["production outage", "data loss", "security breach", "critical failure", "cannot proceed"]
+    medium_terms = ["staging fails", "regression failure", "timeout", "failed", "http 500", "blocked"]
     if any(term in lowered for term in high_terms):
         return "high"
     if any(term in lowered for term in medium_terms):
         return "medium"
     return "low"
+
+
+def infer_document_triage(summary: dict, text: str) -> dict:
+    lowered = text.lower()
+    incident_score = sum(1 for term in INCIDENT_TERMS if term in lowered)
+    if summary["document_type"] in {"test_report", "incident_report", "runtime_log"} and incident_score >= 1:
+        return {
+            "predicted_label": _infer_incident_label(lowered),
+            "likely_cause": "document contains failure or validation evidence that should be investigated",
+            "source": "document_intake_inference",
+            "actionable_incident": True,
+        }
+
+    return {
+        "predicted_label": "document_review",
+        "likely_cause": "uploaded document is reference or requirement context rather than a confirmed failure",
+        "source": "document_intake_inference",
+        "actionable_incident": False,
+    }
+
+
+def normalize_document_triage(triage: dict | None, summary: dict, text: str) -> dict:
+    inferred = infer_document_triage(summary, text)
+    if not triage:
+        return inferred
+    normalized = {**triage}
+    normalized.setdefault(
+        "predicted_label",
+        normalized.get("label") or normalized.get("category") or inferred["predicted_label"],
+    )
+    normalized.setdefault("likely_cause", inferred["likely_cause"])
+    normalized.setdefault("source", "provided_triage")
+    normalized.setdefault("actionable_incident", inferred["actionable_incident"])
+    return normalized
 
 
 def normalize_document_text(text: str) -> str:
@@ -229,6 +284,20 @@ def _make_chunk(index: int, text: str, start: int) -> dict:
 def _signal_score(text: str) -> int:
     lowered = text.lower()
     return sum(1 for term in SIGNAL_TERMS if term in lowered)
+
+
+def _infer_incident_label(lowered: str) -> str:
+    if any(term in lowered for term in ["latency", "timeout", "slow", "memory", "cpu"]):
+        return "performance_issue"
+    if any(term in lowered for term in ["staging", "environment", "config", "sandbox", "dependency"]):
+        return "test_environment_issue"
+    if any(term in lowered for term in ["expected", "acceptance criteria", "requirement", "undefined"]):
+        return "requirement_gap"
+    if any(term in lowered for term in ["api contract", "webhook", "connector", "sync", "field name"]):
+        return "integration_issue"
+    if any(term in lowered for term in ["duplicate", "missing data", "null", "csv", "schema"]):
+        return "data_issue"
+    return "software_bug"
 
 
 def _compact(text: str, limit: int) -> str:

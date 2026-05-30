@@ -67,6 +67,13 @@ PROFILES = {
         validation="Run contract, integration, and idempotency tests across the connected systems.",
         prevention="Maintain API contract tests and change-notification notes for integration owners.",
     ),
+    "document_review": InvestigationProfile(
+        likely_cause="reference document or requirement context, not a confirmed engineering failure",
+        containment="Do not open a defect from this document alone; extract requirements, assumptions, and open questions first.",
+        corrective_action="Convert the document into explicit requirements, owners, risks, and follow-up questions before routing it into issue triage.",
+        validation="Review extracted requirements and assumptions with the product or engineering owner.",
+        prevention="Keep reference documents separated from confirmed incident reports in the intake workflow.",
+    ),
 }
 
 
@@ -221,10 +228,16 @@ def _eight_d_builder_stage(state: dict) -> dict:
     triage = state.get("triage") or {}
     label = state["predicted_label"]
     problem = state["input_summary"]
-    state["investigation_summary"] = (
-        f"The finding is treated as {label.replace('_', ' ')}. "
-        f"The agent routed evidence through the {label} workflow and drafted actions for human review."
-    )
+    if label == "document_review":
+        state["investigation_summary"] = (
+            "The upload is treated as reference or requirement context, not a confirmed defect. "
+            "EngiAgent extracted review evidence and drafted next steps for human validation."
+        )
+    else:
+        state["investigation_summary"] = (
+            f"The finding is treated as {label.replace('_', ' ')}. "
+            f"The agent routed evidence through the {label} workflow and drafted actions for human review."
+        )
     state["eight_d"] = {
         "D1_team": "Software engineer, QA engineer, product/domain owner, and integration or data owner if applicable.",
         "D2_problem_description": problem,
@@ -273,8 +286,8 @@ def _guardrail_stage(state: dict) -> dict:
 
 def _extract_label(triage: dict | None) -> str:
     if not triage:
-        return "software_bug"
-    return triage.get("predicted_label") or triage.get("label") or triage.get("category") or "software_bug"
+        return "document_review"
+    return triage.get("predicted_label") or triage.get("label") or triage.get("category") or "document_review"
 
 
 def _extract_evidence(text: str) -> list[dict]:
